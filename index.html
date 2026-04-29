@@ -344,26 +344,58 @@
         <label class="field-label" id="info-ecode-label" style="margin-bottom:4px;">SEMAK E-KOD BIASA</label>
         <select id="ecode-select" onchange="addEcodeFromSelect(this)" style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:6px;padding:7px 8px;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text);">
           <option value="">— pilih e-kod untuk semak —</option>
-          <optgroup label="⚠️ Haram / Perlu Semak">
-            <option value="E120">E120 — Carmine (pewarna dari serangga)</option>
+          <optgroup label="🔴 Haram — Babi / Alkohol">
+            <option value="E120">E120 — Carmine (pewarna serangga)</option>
             <option value="E441">E441 — Gelatin (tulang/kulit babi)</option>
-            <option value="E471">E471 — Mono &amp; Diglycerides (lemak haiwan)</option>
-            <option value="E481">E481 — Sodium Stearoyl Lactylate (lemak babi)</option>
-            <option value="E482">E482 — Calcium Stearoyl Lactylate (lemak babi)</option>
-            <option value="E483">E483 — Stearyl Tartrate (lemak babi)</option>
-            <option value="E491">E491 — Sorbitan Monostearate (lemak haiwan)</option>
-            <option value="E492">E492 — Sorbitan Tristearate (lemak haiwan)</option>
-            <option value="E542">E542 — Bone Phosphate (tulang haiwan)</option>
-            <option value="E570">E570 — Stearic Acid (lemak babi)</option>
-            <option value="E572">E572 — Magnesium Stearate (lemak babi)</option>
+            <option value="E542">E542 — Bone Phosphate (tulang haiwan, sering babi)</option>
             <option value="E904">E904 — Shellac (resin serangga)</option>
             <option value="E1510">E1510 — Ethanol (alkohol terus)</option>
-            <option value="E422">E422 — Glycerol (semak sumber)</option>
+            <option value="E1505">E1505 — Triethyl Citrate (derivatif alkohol)</option>
+            <option value="E1517">E1517 — Glyceryl Diacetate (derivatif alkohol)</option>
+            <option value="E1518">E1518 — Glyceryl Triacetate (derivatif alkohol)</option>
           </optgroup>
-          <optgroup label="✅ Halal jika sumber betul">
+          <optgroup label="🟠 Emulsifier — Semak Sumber">
+            <option value="E422">E422 — Glycerol/Glycerin (haram jika lemak babi)</option>
+            <option value="E470">E470 — Fatty Acid Salts (sering lemak babi)</option>
+            <option value="E471">E471 — Mono &amp; Diglycerides (sering lemak babi)</option>
+            <option value="E472">E472 — Emulsifiers (sering lemak babi)</option>
+            <option value="E472a">E472a — Acetic Acid Esters (semak sumber)</option>
+            <option value="E472b">E472b — Lactic Acid Esters (semak sumber)</option>
+            <option value="E472c">E472c — Citric Acid Esters (semak sumber)</option>
+            <option value="E472e">E472e — DATEM (semak sumber)</option>
+          </optgroup>
+          <optgroup label="🟠 Stearates — Lemak Babi">
+            <option value="E481">E481 — Sodium Stearoyl Lactylate</option>
+            <option value="E482">E482 — Calcium Stearoyl Lactylate</option>
+            <option value="E483">E483 — Stearyl Tartrate</option>
+            <option value="E491">E491 — Sorbitan Monostearate</option>
+            <option value="E492">E492 — Sorbitan Tristearate</option>
+            <option value="E493">E493 — Sorbitan Monolaurate</option>
+            <option value="E494">E494 — Sorbitan Monooleate</option>
+            <option value="E495">E495 — Sorbitan Monopalmitate</option>
+            <option value="E570">E570 — Stearic Acid (sering lemak babi)</option>
+            <option value="E572">E572 — Magnesium Stearate (sering lemak babi)</option>
+          </optgroup>
+          <optgroup label="🟡 Halal Jika Sumber Betul">
             <option value="E322">E322 — Lecithin (halal jika soya)</option>
-            <option value="E631">E631 — Disodium Inosinate (semak sumber)</option>
-            <option value="E635">E635 — Disodium Ribonucleotide (semak sumber)</option>
+            <option value="E631">E631 — Disodium Inosinate (halal jika tumbuhan)</option>
+            <option value="E635">E635 — Disodium Ribonucleotide (halal jika tumbuhan)</option>
+            <option value="E920">E920 — L-Cysteine (semak sumber)</option>
+          </optgroup>
+          <optgroup label="✅ Selamat — Tumbuhan/Mineral">
+            <option value="E100">E100 — Curcumin/Turmeric (pewarna semula jadi)</option>
+            <option value="E101">E101 — Riboflavin/Vitamin B2</option>
+            <option value="E160a">E160a — Beta-Carotene (tumbuhan)</option>
+            <option value="E200">E200 — Sorbic Acid (pengawet)</option>
+            <option value="E202">E202 — Potassium Sorbate (pengawet)</option>
+            <option value="E300">E300 — Ascorbic Acid/Vitamin C</option>
+            <option value="E330">E330 — Citric Acid (asid sitrik)</option>
+            <option value="E400">E400 — Alginic Acid (rumpai laut)</option>
+            <option value="E440">E440 — Pectin (buah-buahan)</option>
+            <option value="E621">E621 — MSG/Monosodium Glutamate</option>
+            <option value="E950">E950 — Acesulfame K (pemanis)</option>
+            <option value="E951">E951 — Aspartame (pemanis)</option>
+            <option value="E955">E955 — Sucralose (pemanis)</option>
           </optgroup>
         </select>
       </div>
@@ -1312,36 +1344,59 @@
   }
 
   // ============ HALAL CHECKER ============
+  // E-Code library — updated from CSV data
+  // Range reference: E100-E199 natural colors (plant/mineral), E200-E299 preservatives,
+  // E300-E399 antioxidants (plant), E400-E499 thickeners (plant/seaweed),
+  // E600-E699 flavor enhancers, E900-E999 sweeteners
+
   const HARAM_LIST = [
+    // From e-code-name-use-10.csv — confirmed non-halal
     { code: 'E120', name: 'Carmine / Cochineal', reason: 'Insect-derived red colouring' },
-    { code: 'E441', name: 'Gelatin', reason: 'Commonly from pig bones/skin' },
-    { code: 'E542', name: 'Bone Phosphate', reason: 'Extracted from animal bones, often pork' },
-    { code: 'E904', name: 'Shellac', reason: 'Resin from lac insect' },
-    { code: 'E1510', name: 'Ethanol', reason: 'Direct alcohol additive' },
-    { code: 'E422', name: 'Glycerol / Glycerin', reason: 'Haram if sourced from pig fat' },
-    { code: 'E470', name: 'Fatty acid salts', reason: 'Often pig-fat based' },
-    { code: 'E471', name: 'Mono & Diglycerides', reason: 'Haram if animal-fat based' },
-    { code: 'E472', name: 'Emulsifiers', reason: 'Often pig-fat based' },
-    { code: 'E481', name: 'Sodium Stearoyl Lactylate', reason: 'Derived from pork fat' },
-    { code: 'E482', name: 'Calcium Stearoyl Lactylate', reason: 'Derived from pork fat' },
-    { code: 'E483', name: 'Stearyl Tartrate', reason: 'Derived from pork fat' },
+    { code: 'E441', name: 'Gelatin', reason: 'Pig bones/skin' },
+    { code: 'E542', name: 'Bone Phosphate', reason: 'Animal bones, often pork' },
+    { code: 'E904', name: 'Shellac', reason: 'Insect resin' },
+    { code: 'E1510', name: 'Ethanol', reason: 'Alcohol additive — haram' },
+    { code: 'E422', name: 'Glycerol / Glycerin', reason: 'Haram if pig-fat derived' },
+    // E470-E472 emulsifiers
+    { code: 'E470', name: 'Fatty Acid Salts', reason: 'Often pig-fat based' },
+    { code: 'E471', name: 'Mono & Diglycerides', reason: 'Often pig-fat based' },
+    { code: 'E472', name: 'Emulsifiers (E472)', reason: 'Often pig-fat based' },
+    { code: 'E472a', name: 'Acetic Acid Esters', reason: 'Often pig-fat based' },
+    { code: 'E472b', name: 'Lactic Acid Esters', reason: 'Often pig-fat based' },
+    { code: 'E472c', name: 'Citric Acid Esters', reason: 'Often pig-fat based' },
+    { code: 'E472e', name: 'Mono & Diacetyl Tartaric Acid Esters', reason: 'Often pig-fat based' },
+    // E481-E483 stearates
+    { code: 'E481', name: 'Sodium Stearoyl Lactylate', reason: 'Pork fat derivative' },
+    { code: 'E482', name: 'Calcium Stearoyl Lactylate', reason: 'Pork fat derivative' },
+    { code: 'E483', name: 'Stearyl Tartrate', reason: 'Pork fat derivative' },
+    // E491-E495 sorbitan esters
     { code: 'E491', name: 'Sorbitan Monostearate', reason: 'Can be animal-fat based' },
     { code: 'E492', name: 'Sorbitan Tristearate', reason: 'Can be animal-fat based' },
     { code: 'E493', name: 'Sorbitan Monolaurate', reason: 'Can be animal-fat based' },
     { code: 'E494', name: 'Sorbitan Monooleate', reason: 'Can be animal-fat based' },
     { code: 'E495', name: 'Sorbitan Monopalmitate', reason: 'Can be animal-fat based' },
+    // E570, E572 stearic acid
     { code: 'E570', name: 'Stearic Acid', reason: 'Frequently pig-fat derived' },
     { code: 'E572', name: 'Magnesium Stearate', reason: 'Frequently pig-fat derived' },
+    // Alcohol derivatives (e-code-name-use-5.csv)
+    { code: 'E1505', name: 'Triethyl Citrate', reason: 'Alcohol derivative — check if ethanol-based' },
+    { code: 'E1517', name: 'Glyceryl Diacetate', reason: 'Alcohol derivative — check if ethanol-based' },
+    { code: 'E1518', name: 'Glyceryl Triacetate', reason: 'Alcohol derivative — check if ethanol-based' },
+    // Flavor enhancers — haram if animal-based
     { code: 'E631', name: 'Disodium Inosinate', reason: 'Haram if from pork or non-halal meat' },
     { code: 'E635', name: 'Disodium Ribonucleotide', reason: 'Haram if from pork or non-halal meat' },
+    // Non-E-code keywords
     { code: 'gelatin', name: 'Gelatin', reason: 'Commonly from pig bones/skin' },
     { code: 'lard', name: 'Lard', reason: 'Pig fat — clearly haram' },
     { code: 'pork', name: 'Pork', reason: 'Pig meat — haram' },
     { code: 'pig', name: 'Pig-derived', reason: 'Pig product — haram' },
     { code: 'swine', name: 'Swine', reason: 'Pig product — haram' },
+    { code: 'bacon', name: 'Bacon', reason: 'Pig meat — haram' },
+    { code: 'ham', name: 'Ham', reason: 'Pig meat — haram' },
     { code: 'carmine', name: 'Carmine', reason: 'Insect-derived colouring' },
     { code: 'cochineal', name: 'Cochineal', reason: 'Insect-derived colouring' },
-    { code: 'vanilla extract', name: 'Vanilla Extract', reason: 'Ethanol carrier — alcoholic' },
+    { code: 'shellac', name: 'Shellac', reason: 'Insect resin' },
+    { code: 'vanilla extract', name: 'Vanilla Extract', reason: 'Ethanol carrier — may be alcoholic' },
     { code: 'rum', name: 'Rum flavouring', reason: 'Intoxicating alcohol' },
     { code: 'brandy', name: 'Brandy', reason: 'Intoxicating alcohol' },
     { code: 'wine', name: 'Wine', reason: 'Intoxicating alcohol' },
@@ -1350,17 +1405,30 @@
     { code: 'ethanol', name: 'Ethanol', reason: 'Direct alcohol — haram' },
     { code: 'beer', name: 'Beer', reason: 'Alcoholic drink — haram' },
     { code: 'sake', name: 'Sake', reason: 'Alcoholic rice wine — haram' },
+    { code: 'vodka', name: 'Vodka', reason: 'Alcoholic drink — haram' },
+    { code: 'whisky', name: 'Whisky', reason: 'Alcoholic drink — haram' },
+    { code: 'whiskey', name: 'Whiskey', reason: 'Alcoholic drink — haram' },
+    { code: 'l-cysteine', name: 'L-Cysteine', reason: 'Can be from hog hair or human hair' },
+    { code: 'rennet', name: 'Rennet', reason: 'Check if animal or microbial source' },
   ];
 
+  // Conditional halal — from e-code-name-use-5.csv
   const WARN_LIST = [
-    { code: 'E471', name: 'Mono & Diglycerides', note: 'Check if plant-based' },
-    { code: 'E322', name: 'Lecithin', note: 'Check if soy-based (not egg)' },
-    { code: 'E422', name: 'Glycerin', note: 'Check if plant-based' },
-    { code: 'rennet', name: 'Rennet', note: 'Check if microbial/vegetable' },
-    { code: 'L-cysteine', name: 'L-Cysteine', note: 'Check source — can be human hair or hog hair' },
-    { code: 'E920', name: 'L-Cysteine', note: 'Check source — can be haram' },
+    { code: 'E471', name: 'Mono & Diglycerides', note: 'Halal only if plant-based' },
+    { code: 'E322', name: 'Lecithin', note: 'Halal only if soy-based, not egg' },
+    { code: 'E631', name: 'Disodium Inosinate', note: 'Halal only if plant-based' },
+    { code: 'E635', name: 'Disodium Ribonucleotide', note: 'Halal only if plant-based' },
+    { code: 'E422', name: 'Glycerin', note: 'Halal only if plant-based' },
+    { code: 'E1505', name: 'Triethyl Citrate', note: 'Halal only if synthetic, haram if ethanol-based' },
+    { code: 'E1517', name: 'Glyceryl Diacetate', note: 'Halal only if synthetic, haram if ethanol-based' },
+    { code: 'E1518', name: 'Glyceryl Triacetate', note: 'Halal only if synthetic, haram if ethanol-based' },
+    { code: 'E920', name: 'L-Cysteine (E920)', note: 'Check source — can be hog hair or human hair' },
+    { code: 'L-cysteine', name: 'L-Cysteine', note: 'Check source — can be hog hair' },
+    { code: 'rennet', name: 'Rennet', note: 'Halal only if microbial or vegetable source' },
     { code: 'whey', name: 'Whey', note: 'Check if from halal-slaughtered animal' },
-    { code: 'casein', name: 'Casein', note: 'Check source' },
+    { code: 'casein', name: 'Casein', note: 'Check animal source' },
+    { code: 'mono-diglycerides', name: 'Mono-Diglycerides', note: 'Halal only if plant-based' },
+    { code: 'glycerides', name: 'Glycerides', note: 'Check if plant or animal source' },
   ];
 
   function checkIngredients(text) {
