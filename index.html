@@ -336,13 +336,36 @@
     <div class="info-card">
       <div class="info-section-title" id="info-title-type">✍️ Taip atau Tampal Bahan</div>
       <textarea class="ingredient-input" id="ingredient-input" placeholder="cth. Air, Gula, E471, Gelatin, E120..."></textarea>
-      <div class="info-btn-row" style="margin-top:8px;">
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
         <button class="btn btn-primary" onclick="checkIngredients()" id="info-check-btn" style="margin-bottom:0;flex:1;">Semak Halal</button>
-        <button class="btn btn-outline" onclick="resetIngredients()" id="info-reset-btn" style="margin-bottom:0;flex-shrink:0;padding:10px 14px;font-size:0.7rem;">Reset</button>
+        <button onclick="resetIngredients()" id="info-reset-btn" style="flex-shrink:0;padding:8px 12px;font-size:0.65rem;border-radius:8px;border:1.5px solid var(--border2);background:none;color:var(--text3);cursor:pointer;font-family:'DM Mono',monospace;white-space:nowrap;">✕ Reset</button>
       </div>
       <div style="margin-top:10px;">
-        <div class="info-ecode-label" id="info-ecode-label">SEMAK E-KOD BIASA — SWIPE →</div>
-        <div class="info-ecode-scroll" id="ecode-scroll"></div>
+        <label class="field-label" id="info-ecode-label" style="margin-bottom:4px;">SEMAK E-KOD BIASA</label>
+        <select id="ecode-select" onchange="addEcodeFromSelect(this)" style="width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:6px;padding:7px 8px;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text);">
+          <option value="">— pilih e-kod untuk semak —</option>
+          <optgroup label="⚠️ Haram / Perlu Semak">
+            <option value="E120">E120 — Carmine (pewarna dari serangga)</option>
+            <option value="E441">E441 — Gelatin (tulang/kulit babi)</option>
+            <option value="E471">E471 — Mono &amp; Diglycerides (lemak haiwan)</option>
+            <option value="E481">E481 — Sodium Stearoyl Lactylate (lemak babi)</option>
+            <option value="E482">E482 — Calcium Stearoyl Lactylate (lemak babi)</option>
+            <option value="E483">E483 — Stearyl Tartrate (lemak babi)</option>
+            <option value="E491">E491 — Sorbitan Monostearate (lemak haiwan)</option>
+            <option value="E492">E492 — Sorbitan Tristearate (lemak haiwan)</option>
+            <option value="E542">E542 — Bone Phosphate (tulang haiwan)</option>
+            <option value="E570">E570 — Stearic Acid (lemak babi)</option>
+            <option value="E572">E572 — Magnesium Stearate (lemak babi)</option>
+            <option value="E904">E904 — Shellac (resin serangga)</option>
+            <option value="E1510">E1510 — Ethanol (alkohol terus)</option>
+            <option value="E422">E422 — Glycerol (semak sumber)</option>
+          </optgroup>
+          <optgroup label="✅ Halal jika sumber betul">
+            <option value="E322">E322 — Lecithin (halal jika soya)</option>
+            <option value="E631">E631 — Disodium Inosinate (semak sumber)</option>
+            <option value="E635">E635 — Disodium Ribonucleotide (semak sumber)</option>
+          </optgroup>
+        </select>
       </div>
     </div>
 
@@ -1533,41 +1556,28 @@
       }
     } catch(e) {
       if (status) status.textContent = '';
-      // Try to do manual check if user already has text
-      const existingText = document.getElementById('ingredient-input').value;
-      if (existingText.trim()) {
-        checkIngredients(existingText);
+      resultEl.className = 'halal-result halal-check';
+      const isOffline = !navigator.onLine;
+      if (isOffline) {
+        resultEl.innerHTML = '<div class="halal-title">\u26A0\uFE0F Tiada Internet</div><div style="font-size:0.68rem;color:var(--text2);margin-top:6px;">Fungsi baca label perlukan internet.<br>Taip bahan secara manual di bawah dan ketik <strong>Semak Halal</strong>.</div>';
       } else {
-        resultEl.className = 'halal-result halal-check';
-        resultEl.innerHTML = '<div class="halal-title">\u26A0\uFE0F Tiada sambungan / Ralat</div><div style="font-size:0.68rem;color:var(--text2);margin-top:4px;">Perlu internet untuk baca label. Taip bahan secara manual dan ketik Semak Halal.</div>';
+        resultEl.innerHTML = '<div class="halal-title">\u26A0\uFE0F Ralat membaca label</div><div style="font-size:0.68rem;color:var(--text2);margin-top:6px;">Cuba ambil gambar semula — pastikan teks jelas dan pencahayaan baik.<br>Atau taip bahan secara manual di bawah.</div>';
       }
     }
   }
 
   function buildEcodePills() {
-    const container = document.getElementById('ecode-scroll');
-    if (!container) return;
-    const codes = [
-      {code:'E120',warn:true},{code:'E441',warn:true},{code:'E471',warn:true},
-      {code:'E481',warn:true},{code:'E482',warn:true},{code:'E483',warn:true},
-      {code:'E491',warn:true},{code:'E492',warn:true},{code:'E542',warn:true},
-      {code:'E570',warn:true},{code:'E572',warn:true},{code:'E904',warn:true},
-      {code:'E1510',warn:true},{code:'E422',warn:false},{code:'E322',warn:false},
-      {code:'E631',warn:false},{code:'E635',warn:false}
-    ];
-    container.innerHTML = '';
-    codes.forEach(function(item) {
-      const btn = document.createElement('button');
-      btn.className = 'info-ecode-chip';
-      btn.textContent = item.code;
-      if (item.warn) btn.style.color = 'var(--orange)';
-      btn.onclick = function() {
-        const inp = document.getElementById('ingredient-input');
-        inp.value = (inp.value ? inp.value + ', ' : '') + item.code;
-        inp.focus();
-      };
-      container.appendChild(btn);
-    });
+    // E-codes now use a select dropdown - nothing to build
+  }
+
+  function addEcodeFromSelect(sel) {
+    const val = sel.value;
+    if (!val) return;
+    const inp = document.getElementById('ingredient-input');
+    inp.value = (inp.value.trim() ? inp.value.trim() + ', ' : '') + val;
+    inp.focus();
+    // Reset select back to placeholder
+    sel.selectedIndex = 0;
   }
 
   function resetIngredients() {
