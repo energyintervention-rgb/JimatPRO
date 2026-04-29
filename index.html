@@ -1,866 +1,1164 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Jimat 🛒</title>
+  <title>Jimat · Price Compare</title>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Jimat">
-  <meta name="theme-color" content="#1a1a2e">
+  <meta name="theme-color" content="#12111a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <style>
-    :root {
-      --bg: #0f0f1a;
-      --surface: #1a1a2e;
-      --surface2: #222240;
-      --accent: #00e5a0;
-      --accent2: #7c6aff;
-      --warn: #ff6b6b;
-      --gold: #ffd166;
-      --text: #f0f0ff;
-      --text2: #9090b0;
-      --radius: 16px;
-      --nav-h: 68px;
+    :root{
+      --bg:#12111a;--surface:#1e1c2a;--surface2:#272537;--border:#ffffff0f;
+      --accent:#b8f59a;--accent2:#9b8cff;--warn:#ff7c7c;--gold:#ffd166;--teal:#5ef0d8;
+      --text:#f0eeff;--text2:#7e7a99;--r:14px;--nav-h:66px;
+      --mono:'DM Mono',monospace;--disp:'Syne',sans-serif;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; overflow: hidden; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);overflow:hidden;}
 
-    /* SPLASH */
-    #splash {
-      position: fixed; inset: 0; background: var(--bg); z-index: 999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-      animation: splashOut 0.4s ease 2s forwards;
-    }
-    .splash-icon { font-size: 72px; animation: bounceIn 0.6s cubic-bezier(.36,.07,.19,.97); }
-    .splash-title { font-size: 42px; font-weight: 800; letter-spacing: -1px; color: var(--accent); }
-    .splash-sub { font-size: 13px; letter-spacing: 4px; color: var(--text2); text-transform: uppercase; }
-    @keyframes bounceIn { 0%{transform:scale(0.3) rotate(-15deg);opacity:0} 60%{transform:scale(1.1) rotate(3deg)} 100%{transform:scale(1) rotate(0);opacity:1} }
-    @keyframes splashOut { to { opacity: 0; pointer-events: none; visibility: hidden; } }
+    /* ── SPLASH ── */
+    #splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:spOut 0.5s ease 2.3s forwards;}
+    .sp-icon{font-size:64px;animation:spBounce 0.7s cubic-bezier(.36,.07,.19,.97) both;}
+    .sp-title{font-family:var(--disp);font-weight:800;font-size:2.6rem;color:var(--accent);letter-spacing:-1px;}
+    .sp-sub{font-size:0.6rem;letter-spacing:0.22em;color:var(--text2);text-transform:uppercase;}
+    .sp-bar{width:120px;height:3px;background:var(--surface2);border-radius:4px;margin-top:22px;overflow:hidden;}
+    .sp-prog{height:100%;width:0;background:var(--accent);border-radius:4px;animation:spLoad 1.9s ease forwards 0.3s;}
+    @keyframes spBounce{0%{transform:scale(.3) rotate(-20deg);opacity:0}65%{transform:scale(1.15) rotate(4deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+    @keyframes spLoad{to{width:100%;}}
+    @keyframes spOut{to{opacity:0;pointer-events:none;visibility:hidden;}}
 
-    /* LAYOUT */
-    #app { height: 100%; display: flex; flex-direction: column; }
-    .pages { flex: 1; overflow: hidden; position: relative; }
-    .page { position: absolute; inset: 0; overflow-y: auto; padding: 16px 16px calc(var(--nav-h) + 16px); display: none; }
-    .page.active { display: block; }
+    /* ── LAYOUT ── */
+    #app{height:100%;display:flex;flex-direction:column;}
+    .pages{flex:1;overflow:hidden;position:relative;}
+    .page{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding:14px 14px calc(var(--nav-h)+24px);display:none;}
+    .page.active{display:block;}
 
-    /* NAV */
-    nav {
-      height: var(--nav-h); background: var(--surface); border-top: 1px solid #ffffff10;
-      display: flex; align-items: center; justify-content: space-around;
-      padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0;
-    }
-    .nav-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-      background: none; border: none; color: var(--text2); font-family: 'Outfit', sans-serif;
-      font-size: 10px; font-weight: 600; cursor: pointer; padding: 8px 4px; transition: color 0.2s;
-    }
-    .nav-btn .ni { font-size: 22px; }
-    .nav-btn.active { color: var(--accent); }
-    .nav-btn.active .ni { filter: drop-shadow(0 0 6px var(--accent)); }
+    /* ── NAV ── */
+    nav{height:var(--nav-h);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding-bottom:env(safe-area-inset-bottom);flex-shrink:0;}
+    .nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--text2);font-family:var(--mono);font-size:9px;cursor:pointer;padding:8px 2px;transition:color 0.2s;}
+    .nb .ni{font-size:20px;transition:transform 0.2s;}
+    .nb.active{color:var(--accent);}
+    .nb.active .ni{transform:scale(1.15);filter:drop-shadow(0 0 8px var(--accent));}
 
-    /* HEADER */
-    .page-header { margin-bottom: 20px; }
-    .page-header h1 { font-size: 26px; font-weight: 800; }
-    .page-header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+    /* ── TOPBAR ── */
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+    .topbar h1{font-family:var(--disp);font-weight:800;font-size:1.5rem;letter-spacing:-0.5px;}
+    .topbar-right{display:flex;align-items:center;gap:6px;}
+    .lang-wrap{display:flex;gap:4px;}
+    .lbtn{background:var(--surface2);border:none;color:var(--text2);padding:5px 10px;border-radius:20px;font-family:var(--mono);font-size:10px;cursor:pointer;transition:all 0.2s;}
+    .lbtn.active{background:var(--accent);color:#000;font-weight:700;}
+    .curr-btn{background:var(--surface2);border:1px solid var(--border);color:var(--accent);font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+    .curr-btn:hover{border-color:var(--accent);}
 
-    /* LANG TOGGLE */
-    .lang-bar { display: flex; justify-content: flex-end; margin-bottom: 16px; gap: 6px; }
-    .lang-btn { background: var(--surface2); border: none; color: var(--text2); padding: 6px 14px; border-radius: 20px; font-family: 'Outfit',sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .lang-btn.active { background: var(--accent); color: #000; }
+    /* ── CURRENCY PANEL ── */
+    #currPanel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px;}
+    #currPanel.open{display:block;}
+    .curr-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:10px;}
+    .curr-row select{background:var(--surface2);border:1.5px solid transparent;border-radius:8px;padding:8px;color:var(--text);font-family:var(--mono);font-size:0.82rem;outline:none;}
+    .curr-row select:focus{border-color:var(--accent2);}
+    .curr-swap{background:var(--surface2);border:none;color:var(--accent2);font-size:18px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.3s;}
+    .curr-swap:active{transform:rotate(180deg);}
+    .curr-amount-row{display:flex;gap:8px;margin-bottom:8px;}
+    .curr-amount-row input{flex:1;background:var(--surface2);border:1.5px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:0.9rem;outline:none;}
+    .curr-amount-row input:focus{border-color:var(--accent);}
+    .curr-result{background:var(--surface2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+    .curr-result-val{font-family:var(--disp);font-size:1.4rem;font-weight:800;color:var(--accent);}
+    .curr-result-rate{font-size:0.65rem;color:var(--text2);}
+    .curr-apply{width:100%;background:var(--accent);border:none;border-radius:10px;padding:10px;font-family:var(--mono);font-size:0.8rem;font-weight:700;color:#000;cursor:pointer;}
 
-    /* CARDS */
-    .card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
-    .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); margin-bottom: 10px; }
+    /* ── COMMON ── */
+    .tag{display:inline-block;background:var(--surface2);color:var(--text2);font-size:0.55rem;padding:3px 8px;border-radius:4px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);}
+    .section-label{font-size:0.55rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--text2);margin-bottom:8px;margin-top:16px;}
+    input[type="text"],input[type="number"],select,textarea{width:100%;background:var(--surface2);border:1.5px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:0.82rem;outline:none;transition:border-color 0.2s;}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent2);}
+    input::placeholder,textarea::placeholder{color:var(--text2);}
+    select option{background:var(--surface2);}
+    textarea{resize:none;line-height:1.5;}
+    .btn{display:flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:10px;padding:12px 16px;font-family:var(--mono);font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.18s;width:100%;}
+    .btn:active{transform:scale(0.97);}
+    .btn-primary{background:var(--accent);color:#000;}
+    .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--text2);}
+    .btn-ghost:hover{border-color:var(--warn);color:var(--warn);}
+    .btn-wa{background:#25D366;color:#fff;}
+    .btn-teal{background:var(--teal);color:#000;}
+    .btn-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+    .empty-state{text-align:center;padding:36px 20px;color:var(--text2);}
+    .empty-state .ei{font-size:44px;margin-bottom:10px;}
+    .empty-state p{font-size:0.78rem;line-height:1.6;}
 
-    /* BUTTONS */
-    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; padding: 14px 20px; font-family: 'Outfit',sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; width: 100%; }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-primary:active { transform: scale(0.97); }
-    .btn-secondary { background: var(--surface2); color: var(--text); }
-    .btn-outline { background: transparent; border: 1.5px solid var(--accent2); color: var(--accent2); }
+    /* ── COMPARE: HORIZONTAL SCROLL CARDS ── */
+    .compare-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px 10px;scroll-snap-type:x mandatory;}
+    .compare-scroll-wrap::-webkit-scrollbar{height:3px;}
+    .compare-scroll-wrap::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
+    .compare-scroll-inner{display:flex;gap:10px;width:max-content;}
+    .item-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:13px;width:170px;flex-shrink:0;position:relative;scroll-snap-align:start;transition:border-color 0.2s;}
+    .item-card.winner{border-color:var(--accent);background:#b8f59a0a;}
+    .item-card-add{background:var(--surface2);border:1.5px dashed var(--border);border-radius:var(--r);width:64px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--text2);cursor:pointer;scroll-snap-align:start;transition:border-color 0.2s;min-height:200px;}
+    .item-card-add:hover{border-color:var(--accent);color:var(--accent);}
+    .item-num{font-family:var(--disp);font-size:0.58rem;font-weight:800;color:var(--text2);margin-bottom:8px;letter-spacing:0.08em;text-transform:uppercase;}
+    .item-card.winner .item-num{color:var(--accent);}
+    .field-group{margin-bottom:8px;}
+    .field-label{font-size:0.52rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text2);margin-bottom:3px;display:block;}
+    .field-row{display:flex;align-items:center;gap:4px;}
+    .currency-sym{font-size:0.75rem;color:var(--text2);flex-shrink:0;}
+    .unit-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+    .del-x{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:2px 5px;border-radius:5px;}
+    .del-x:active{color:var(--warn);}
 
-    /* COMPARE PAGE */
-    .store-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .store-row input { flex: 1; background: var(--surface2); border: 1.5px solid transparent; border-radius: 10px; padding: 11px 13px; color: var(--text); font-family: 'Outfit',sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
-    .store-row input:focus { border-color: var(--accent2); }
-    .store-row input::placeholder { color: var(--text2); }
-    .del-btn { background: #ff6b6b22; border: none; color: var(--warn); width: 40px; border-radius: 10px; font-size: 18px; cursor: pointer; flex-shrink: 0; }
-    .result-bar { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; margin-bottom: 8px; }
-    .result-bar.best { background: #00e5a020; border: 1.5px solid var(--accent); }
-    .result-bar.rest { background: var(--surface2); }
-    .result-rank { font-size: 20px; width: 30px; text-align: center; }
-    .result-info { flex: 1; }
-    .result-store { font-size: 13px; color: var(--text2); }
-    .result-price { font-size: 18px; font-weight: 700; font-family: 'DM Mono', monospace; }
-    .result-save { font-size: 12px; color: var(--accent); font-weight: 600; }
+    /* verdict */
+    .verdict-best{background:linear-gradient(135deg,#1a3025,#1f3830);border:1.5px solid #b8f59a44;border-radius:var(--r);padding:16px;margin-bottom:10px;}
+    .verdict-lbl{font-size:0.52rem;letter-spacing:0.16em;text-transform:uppercase;color:#b8f59a88;margin-bottom:3px;}
+    .verdict-name{font-family:var(--disp);font-size:1.1rem;font-weight:800;color:var(--accent);}
+    .verdict-ppu{font-size:0.68rem;color:var(--text2);margin-top:2px;}
+    .pill-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+    .pill{display:inline-flex;align-items:center;gap:4px;background:#b8f59a15;border:1px solid #b8f59a33;color:var(--accent);font-size:0.6rem;padding:3px 9px;border-radius:20px;}
+    .vother{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:10px;padding:9px 12px;margin-bottom:6px;}
+    .vother-rank{font-size:0.9rem;width:22px;text-align:center;flex-shrink:0;}
+    .vother-name{font-size:0.78rem;flex:1;}
+    .vother-ppu{font-size:0.65rem;color:var(--text2);}
+    .vother-diff{font-size:0.6rem;color:var(--warn);margin-left:4px;}
 
-    /* SHOPPING LIST */
-    .list-item { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--surface2); border-radius: 10px; margin-bottom: 8px; }
-    .list-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--accent2); background: none; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-    .list-check.done { background: var(--accent); border-color: var(--accent); color: #000; }
-    .list-text { flex: 1; font-size: 15px; }
-    .list-text.done { text-decoration: line-through; color: var(--text2); }
-    .list-add { display: flex; gap: 8px; margin-bottom: 12px; }
-    .list-add input { flex: 1; background: var(--surface2); border: 1.5px solid transparent; border-radius: 10px; padding: 11px 13px; color: var(--text); font-family: 'Outfit',sans-serif; font-size: 14px; outline: none; }
-    .list-add input:focus { border-color: var(--accent); }
+    /* ── SHOPPING LIST ── */
+    .list-add-row{display:flex;gap:8px;margin-bottom:12px;}
+    .list-add-row input{flex:1;}
+    .list-item-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:10px;padding:11px 12px;margin-bottom:7px;border:1.5px solid transparent;}
+    .list-item-row.done{border-color:#b8f59a22;}
+    .chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--accent2);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;}
+    .chk.on{background:var(--accent);border-color:var(--accent);color:#000;}
+    .li-txt{flex:1;font-size:0.82rem;}
+    .li-txt.done{text-decoration:line-through;color:var(--text2);}
 
-    /* HISTORY */
-    .hist-item { padding: 14px; background: var(--surface2); border-radius: 10px; margin-bottom: 8px; }
-    .hist-date { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
-    .hist-winner { font-size: 15px; font-weight: 700; color: var(--accent); }
-    .hist-detail { font-size: 13px; color: var(--text2); margin-top: 2px; }
+    /* ── HISTORY ── */
+    .hist-card{background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:3px solid #b8f59a33;}
+    .hist-date{font-size:0.58rem;color:var(--text2);margin-bottom:4px;}
+    .hist-win{font-size:0.85rem;font-weight:700;color:var(--accent);}
+    .hist-meta{font-size:0.65rem;color:var(--text2);margin-top:2px;}
 
-    /* ===== SCAN PAGE ===== */
-    .scan-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .scan-method-btn {
-      background: var(--surface); border: 2px solid var(--surface2); border-radius: var(--radius);
-      padding: 20px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;
-      cursor: pointer; transition: all 0.2s; color: var(--text); font-family: 'Outfit',sans-serif;
-    }
-    .scan-method-btn:active, .scan-method-btn.selected { border-color: var(--accent); background: #00e5a010; }
-    .scan-method-btn .sm-icon { font-size: 36px; }
-    .scan-method-btn .sm-title { font-size: 14px; font-weight: 700; }
-    .scan-method-btn .sm-sub { font-size: 11px; color: var(--text2); text-align: center; }
+    /* ── SCAN ── */
+    .scan-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+    .scan-opt{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;color:var(--text);font-family:var(--mono);}
+    .scan-opt.sel{border-color:var(--accent);background:#b8f59a0a;}
+    .so-icon{font-size:30px;}
+    .so-title{font-size:0.72rem;font-weight:700;}
+    .so-sub{font-size:0.58rem;color:var(--text2);text-align:center;line-height:1.4;}
+    #camArea,#photoArea{display:none;margin-bottom:12px;}
+    #camArea.on,#photoArea.on{display:block;}
+    #bcScanner{width:100%;border-radius:var(--r);overflow:hidden;background:#000;min-height:180px;position:relative;}
+    #bcScanner video{width:100%;display:block;border-radius:var(--r);}
+    #bcScanner canvas{display:none;}
+    .scan-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+    .scan-fr{width:68%;aspect-ratio:3/1;border:2px solid var(--accent);border-radius:8px;box-shadow:0 0 0 9999px #00000070;position:relative;}
+    .scan-ln{position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);animation:scanAnim 2s ease-in-out infinite;}
+    @keyframes scanAnim{0%,100%{top:0}50%{top:calc(100% - 2px)}}
+    .photo-drop{width:100%;border-radius:var(--r);background:var(--surface2);min-height:155px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;margin-bottom:10px;border:1.5px dashed var(--border);}
+    .photo-drop img{width:100%;border-radius:var(--r);display:none;}
+    .ph-holder{text-align:center;color:var(--text2);}
+    .ph-holder .phi{font-size:34px;margin-bottom:5px;}
+    .ph-holder p{font-size:0.7rem;line-height:1.5;}
+    .man-row{display:flex;gap:7px;margin-bottom:10px;}
+    .man-row input{flex:1;}
 
-    /* Camera viewport */
-    #camera-area { display: none; margin-bottom: 16px; }
-    #camera-area.visible { display: block; }
-    #barcode-scanner { width: 100%; border-radius: var(--radius); overflow: hidden; position: relative; background: #000; min-height: 200px; }
-    #barcode-scanner video { width: 100%; display: block; border-radius: var(--radius); }
-    #barcode-scanner canvas { display: none; }
-    .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-    .scan-frame { width: 70%; aspect-ratio: 3/1; border: 2px solid var(--accent); border-radius: 8px; box-shadow: 0 0 0 9999px #00000060; position: relative; }
-    .scan-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); animation: scanLine 2s ease-in-out infinite; }
-    @keyframes scanLine { 0%,100%{top:0} 50%{top:calc(100% - 2px)} }
+    /* location bar */
+    .loc-bar{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:12px;border:1px solid var(--border);}
+    .loc-icon{font-size:18px;flex-shrink:0;}
+    .loc-text{flex:1;font-size:0.75rem;color:var(--text2);line-height:1.4;}
+    .loc-text.found{color:var(--teal);}
+    .loc-btn{background:var(--surface);border:1px solid var(--border);color:var(--accent2);font-family:var(--mono);font-size:0.65rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0;white-space:nowrap;}
+    .loc-btn:active{transform:scale(0.97);}
+    .country-row{display:flex;gap:8px;margin-bottom:10px;}
+    .country-row select{flex:1;}
 
-    #photo-area { display: none; margin-bottom: 16px; }
-    #photo-area.visible { display: block; }
-    #photo-input { display: none; }
-    .photo-preview { width: 100%; border-radius: var(--radius); background: var(--surface2); min-height: 180px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; margin-bottom: 10px; cursor: pointer; }
-    .photo-preview img { width: 100%; border-radius: var(--radius); display: none; }
-    .photo-placeholder { text-align: center; color: var(--text2); }
-    .photo-placeholder .pp-icon { font-size: 40px; margin-bottom: 8px; }
-    .photo-placeholder p { font-size: 13px; }
+    /* scan result */
+    #scanResult{display:none;}
+    #scanResult.on{display:block;}
+    .rp-name{font-family:var(--disp);font-size:1.15rem;font-weight:800;margin-bottom:2px;}
+    .rp-brand{font-size:0.7rem;color:var(--text2);margin-bottom:12px;}
+    .audience-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;}
+    .aud-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;}
+    .aud-veg{background:#b8f59a18;color:var(--accent);border:1px solid #b8f59a44;}
+    .aud-travel{background:#5ef0d818;color:var(--teal);border:1px solid #5ef0d844;}
+    .aud-med{background:#9b8cff18;color:var(--accent2);border:1px solid #9b8cff44;}
+    .aud-food{background:#ffd16618;color:var(--gold);border:1px solid #ffd16644;}
+    .info-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+    .info-row:last-child{border-bottom:none;}
+    .ir-icon{font-size:20px;flex-shrink:0;width:26px;text-align:center;margin-top:1px;}
+    .ir-label{font-size:0.5rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--text2);margin-bottom:2px;}
+    .ir-val{font-size:0.78rem;line-height:1.5;}
+    .badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:700;margin:2px 2px 2px 0;}
+    .b-green{background:#b8f59a18;color:var(--accent);border:1px solid #b8f59a44;}
+    .b-red{background:#ff7c7c18;color:var(--warn);border:1px solid #ff7c7c44;}
+    .b-yellow{background:#ffd16618;color:var(--gold);border:1px solid #ffd16644;}
+    .b-grey{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+    .ai-block{margin-top:16px;}
+    .ai-lbl{font-size:0.6rem;color:var(--text2);text-align:center;margin-bottom:9px;}
+    .ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+    .ai-a{display:flex;align-items:center;gap:6px;padding:9px 11px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--mono);font-size:0.72rem;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color 0.2s;}
+    .ai-a:hover{border-color:var(--accent2);}
+    .ai-a .ail{font-size:15px;}
 
-    /* Manual barcode input */
-    .manual-input { display: flex; gap: 8px; margin-bottom: 12px; }
-    .manual-input input { flex: 1; background: var(--surface2); border: 1.5px solid transparent; border-radius: 10px; padding: 11px 13px; color: var(--text); font-family: 'DM Mono',monospace; font-size: 14px; outline: none; letter-spacing: 1px; }
-    .manual-input input:focus { border-color: var(--accent2); }
+    /* ── SURVEY ── */
+    .sv-capture{background:var(--surface);border:1.5px dashed var(--border);border-radius:var(--r);min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin-bottom:12px;overflow:hidden;}
+    .sv-capture img{width:100%;border-radius:var(--r);display:none;}
+    .sv-ph{text-align:center;color:var(--text2);padding:16px;}
+    .sv-ph .svpi{font-size:36px;margin-bottom:6px;}
+    .sv-ph p{font-size:0.7rem;line-height:1.5;}
+    .sg-header{display:flex;align-items:center;justify-content:space-between;margin:16px 0 10px;}
+    .sg-title{font-family:var(--disp);font-size:1rem;font-weight:800;}
+    .sg-clear{background:none;border:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:0.62rem;padding:5px 9px;border-radius:8px;cursor:pointer;}
+    .sg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .sg-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+    .sg-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--surface2);}
+    .sg-body{padding:8px;}
+    .sg-store{font-size:0.72rem;font-weight:700;color:var(--accent);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .sg-note{font-size:0.63rem;color:var(--text2);margin-bottom:3px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .sg-date{font-size:0.56rem;color:var(--text2);margin-bottom:5px;}
+    .sg-actions{display:flex;gap:4px;}
+    .sg-btn{flex:1;background:var(--surface2);border:none;color:var(--text2);font-family:var(--mono);font-size:0.58rem;padding:5px 4px;border-radius:6px;cursor:pointer;}
+    .sg-btn.del:active{color:var(--warn);}
 
-    /* Result card */
-    #scan-result { display: none; }
-    #scan-result.visible { display: block; }
-    .result-product-name { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
-    .result-brand { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+    /* ── LOADER ── */
+    .loader{display:none;flex-direction:column;align-items:center;gap:10px;padding:28px 0;}
+    .loader.on{display:flex;}
+    .spin{width:34px;height:34px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.75s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .spin-txt{font-size:0.7rem;color:var(--text2);}
 
-    .info-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #ffffff08; }
-    .info-row:last-child { border-bottom: none; }
-    .info-icon { font-size: 24px; flex-shrink: 0; width: 32px; text-align: center; margin-top: 2px; }
-    .info-body { flex: 1; }
-    .info-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 3px; }
-    .info-value { font-size: 14px; line-height: 1.5; }
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-right: 4px; margin-bottom: 4px; }
-    .badge-green { background: #00e5a020; color: var(--accent); border: 1px solid var(--accent); }
-    .badge-red { background: #ff6b6b20; color: var(--warn); border: 1px solid var(--warn); }
-    .badge-yellow { background: #ffd16620; color: var(--gold); border: 1px solid var(--gold); }
-    .badge-grey { background: var(--surface2); color: var(--text2); }
-
-    /* AI fallback */
-    .ai-section { margin-top: 20px; }
-    .ai-section-title { font-size: 13px; color: var(--text2); text-align: center; margin-bottom: 12px; }
-    .ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-    .ai-btn {
-      display: flex; align-items: center; gap: 8px; padding: 11px 14px;
-      border-radius: 10px; border: 1.5px solid #ffffff15; background: var(--surface2);
-      color: var(--text); font-family: 'Outfit',sans-serif; font-size: 13px; font-weight: 600;
-      cursor: pointer; text-decoration: none; transition: all 0.2s;
-    }
-    .ai-btn:active { transform: scale(0.97); }
-    .ai-btn .ai-logo { font-size: 18px; }
-    .ai-btn.google { border-color: #4285f440; }
-    .ai-btn.chatgpt { border-color: #10a37f40; }
-    .ai-btn.copilot { border-color: #0078d440; }
-    .ai-btn.gemini { border-color: #8ab4f840; }
-    .ai-btn.claude { border-color: #cc785c40; }
-
-    /* Loader */
-    .loader { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 32px 0; }
-    .loader.visible { display: flex; }
-    .spinner { width: 40px; height: 40px; border: 3px solid var(--surface2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loader-text { font-size: 14px; color: var(--text2); }
-
-    /* Empty state */
-    .empty { text-align: center; padding: 40px 20px; color: var(--text2); }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-    .empty p { font-size: 14px; line-height: 1.6; }
-
-    /* WhatsApp share */
-    .share-btn { background: #25D366; color: #fff; margin-top: 12px; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+    ::-webkit-scrollbar{width:3px;}
+    ::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
   </style>
 </head>
 <body>
 
-<!-- SPLASH -->
 <div id="splash">
-  <div class="splash-icon">🛒</div>
-  <div class="splash-title" id="splashTitle">Jimat</div>
-  <div class="splash-sub" id="splashSub">Beli Bijak · Jimat Lebih</div>
+  <div class="sp-icon">🛒</div>
+  <div class="sp-title" id="spTitle">Jimat</div>
+  <div class="sp-sub" id="spSub">Beli Bijak · Jimat Lebih</div>
+  <div class="sp-bar"><div class="sp-prog"></div></div>
 </div>
 
 <div id="app">
   <div class="pages">
 
-    <!-- PAGE: COMPARE -->
-    <div class="page active" id="page-compare">
-      <div class="lang-bar">
-        <button class="lang-btn active" onclick="setLang('my')">MY</button>
-        <button class="lang-btn" onclick="setLang('en')">EN</button>
-      </div>
-      <div class="page-header">
-        <h1 id="t-compare-title">🔍 Bandingkan</h1>
-        <p id="t-compare-sub">Masukkan harga dari kedai berbeza</p>
-      </div>
-
-      <div class="card">
-        <div class="card-title" id="t-item-name">Nama Produk</div>
-        <input type="text" id="itemName" placeholder="cth: Milo 1kg" style="width:100%;background:var(--surface2);border:1.5px solid transparent;border-radius:10px;padding:11px 13px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;margin-bottom:4px;">
-      </div>
-
-      <div class="card">
-        <div class="card-title" id="t-stores">Kedai & Harga</div>
-        <div id="storeList"></div>
-        <button class="btn btn-secondary" onclick="addStore()" style="margin-top:4px;" id="t-add-store">+ Tambah Kedai</button>
-      </div>
-
-      <button class="btn btn-primary" onclick="compareNow()" id="t-compare-btn">🔍 Bandingkan Harga</button>
-
-      <div id="compareResult" style="margin-top:16px;display:none;">
-        <div class="card">
-          <div class="card-title" id="t-result-title">Keputusan</div>
-          <div id="resultList"></div>
+    <!-- ══ COMPARE ══ -->
+    <div class="page active" id="pg-compare">
+      <div class="topbar">
+        <div><div class="tag" id="t-tag">Supermarket Tool</div><h1 id="t-h1">Price Compare</h1></div>
+        <div class="topbar-right">
+          <button class="curr-btn" id="currBtn" onclick="toggleCurr()">RM ▾</button>
+          <div class="lang-wrap">
+            <button class="lbtn active" onclick="setLang('en')">EN</button>
+            <button class="lbtn" onclick="setLang('my')">MY</button>
+          </div>
         </div>
-        <button class="btn share-btn" onclick="shareWhatsApp()" id="t-share-btn">📲 Kongsi via WhatsApp</button>
       </div>
+      <p style="font-size:0.68rem;color:var(--text2);margin-bottom:12px;" id="t-sub">Find the best value per unit</p>
+
+      <!-- Currency panel -->
+      <div id="currPanel">
+        <div class="curr-row">
+          <select id="currFrom" onchange="onCurrChange()">
+            <option value="MYR">🇲🇾 MYR</option><option value="USD">🇺🇸 USD</option>
+            <option value="SGD">🇸🇬 SGD</option><option value="THB">🇹🇭 THB</option>
+            <option value="IDR">🇮🇩 IDR</option><option value="AED">🇦🇪 AED</option>
+            <option value="SAR">🇸🇦 SAR</option><option value="JPY">🇯🇵 JPY</option>
+            <option value="CNY">🇨🇳 CNY</option><option value="EUR">🇪🇺 EUR</option>
+            <option value="GBP">🇬🇧 GBP</option><option value="AUD">🇦🇺 AUD</option>
+            <option value="KRW">🇰🇷 KRW</option><option value="INR">🇮🇳 INR</option>
+            <option value="BDT">🇧🇩 BDT</option><option value="PKR">🇵🇰 PKR</option>
+          </select>
+          <button class="curr-swap" onclick="swapCurr()">⇄</button>
+          <select id="currTo" onchange="onCurrChange()">
+            <option value="MYR">🇲🇾 MYR</option><option value="USD">🇺🇸 USD</option>
+            <option value="SGD">🇸🇬 SGD</option><option value="THB">🇹🇭 THB</option>
+            <option value="IDR">🇮🇩 IDR</option><option value="AED">🇦🇪 AED</option>
+            <option value="SAR">🇸🇦 SAR</option><option value="JPY">🇯🇵 JPY</option>
+            <option value="CNY">🇨🇳 CNY</option><option value="EUR">🇪🇺 EUR</option>
+            <option value="GBP">🇬🇧 GBP</option><option value="AUD">🇦🇺 AUD</option>
+            <option value="KRW">🇰🇷 KRW</option><option value="INR">🇮🇳 INR</option>
+            <option value="BDT">🇧🇩 BDT</option><option value="PKR">🇵🇰 PKR</option>
+          </select>
+        </div>
+        <div class="curr-amount-row">
+          <input type="number" id="currAmt" value="1" min="0" step="any" oninput="calcCurr()">
+        </div>
+        <div class="curr-result">
+          <div>
+            <div class="curr-result-val" id="currResult">—</div>
+            <div class="curr-result-rate" id="currRate">Fetching rate...</div>
+          </div>
+          <button class="curr-apply" onclick="applyCurr()" id="t-currApply" style="width:auto;padding:8px 14px;">Use this currency</button>
+        </div>
+      </div>
+
+      <!-- Horizontal scroll item cards -->
+      <div class="section-label" id="t-storesLbl">Stores to compare</div>
+      <div class="compare-scroll-wrap" id="compareScrollWrap">
+        <div class="compare-scroll-inner" id="itemsInner">
+          <!-- cards inserted here -->
+          <div class="item-card-add" onclick="addItem()" title="Add store">＋</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:7px;">
+        <button class="btn btn-primary" onclick="comparePrices()" id="t-compare">🔍 Compare Prices</button>
+        <button class="btn btn-ghost" onclick="clearItems()" id="t-clear">Clear All</button>
+      </div>
+      <div id="verdict" style="margin-top:14px;"></div>
     </div>
 
-    <!-- PAGE: LIST -->
-    <div class="page" id="page-list">
-      <div class="page-header">
-        <h1 id="t-list-title">🛒 Senarai Beli</h1>
-        <p id="t-list-sub">Senarai belanja anda</p>
+    <!-- ══ LIST ══ -->
+    <div class="page" id="pg-list">
+      <div class="topbar"><h1 id="t-listH">🛒 Shopping List</h1></div>
+      <div class="list-add-row">
+        <input type="text" id="liInput" placeholder="Add item...">
+        <button class="btn btn-primary" style="width:auto;padding:10px 14px;" onclick="addLI()">+</button>
       </div>
-      <div class="list-add">
-        <input type="text" id="listInput" placeholder="Tambah item..." id="t-list-placeholder">
-        <button class="btn btn-primary" style="width:auto;padding:11px 18px;" onclick="addListItem()">+</button>
-      </div>
-      <div id="listItems"></div>
-      <div class="empty" id="listEmpty">
-        <div class="empty-icon">🛍️</div>
-        <p id="t-list-empty">Senarai kosong.<br>Tambah item di atas!</p>
-      </div>
+      <div id="liItems"></div>
+      <div class="empty-state" id="liEmpty"><div class="ei">🛍️</div><p id="t-liEmpty">Your list is empty.<br>Add items above!</p></div>
     </div>
 
-    <!-- PAGE: HISTORY -->
-    <div class="page" id="page-history">
-      <div class="page-header">
-        <h1 id="t-hist-title">📋 Sejarah</h1>
-        <p id="t-hist-sub">Perbandingan lepas</p>
-      </div>
-      <div id="historyList"></div>
-      <div class="empty" id="histEmpty">
-        <div class="empty-icon">📭</div>
-        <p id="t-hist-empty">Tiada sejarah lagi.<br>Cuba bandingkan harga dulu!</p>
-      </div>
+    <!-- ══ HISTORY ══ -->
+    <div class="page" id="pg-history">
+      <div class="topbar"><h1 id="t-histH">📋 History</h1></div>
+      <div id="histList"></div>
+      <div class="empty-state" id="histEmpty"><div class="ei">📭</div><p id="t-histEmpty">No history yet.<br>Compare some prices first!</p></div>
     </div>
 
-    <!-- PAGE: SCAN & CHECK / SEMAK PRODUK -->
-    <div class="page" id="page-scan">
-      <div class="page-header">
-        <h1 id="t-scan-title">🔬 Semak Produk</h1>
-        <p id="t-scan-sub">Imbas barcode atau ambil gambar produk</p>
+    <!-- ══ SCAN ══ -->
+    <div class="page" id="pg-scan">
+      <div class="topbar"><h1 id="t-scanH">🔬 Scan & Check</h1></div>
+      <p style="font-size:0.68rem;color:var(--text2);margin-bottom:12px;" id="t-scanSub">Scan barcode or photo the product label</p>
+
+      <!-- Location bar -->
+      <div class="loc-bar">
+        <div class="loc-icon">📍</div>
+        <div class="loc-text" id="locText">Location helps find accurate Halal &amp; safety info</div>
+        <button class="loc-btn" onclick="detectLocation()" id="locBtn">Detect</button>
+      </div>
+      <div class="country-row">
+        <select id="countrySelect" onchange="onCountryChange(this.value)">
+          <option value="">🌍 Select country manually...</option>
+          <option value="Malaysia">🇲🇾 Malaysia</option>
+          <option value="Singapore">🇸🇬 Singapore</option>
+          <option value="Indonesia">🇮🇩 Indonesia</option>
+          <option value="Thailand">🇹🇭 Thailand</option>
+          <option value="Japan">🇯🇵 Japan</option>
+          <option value="South Korea">🇰🇷 South Korea</option>
+          <option value="China">🇨🇳 China</option>
+          <option value="India">🇮🇳 India</option>
+          <option value="United Arab Emirates">🇦🇪 UAE</option>
+          <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
+          <option value="United Kingdom">🇬🇧 United Kingdom</option>
+          <option value="Australia">🇦🇺 Australia</option>
+          <option value="United States">🇺🇸 United States</option>
+          <option value="France">🇫🇷 France</option>
+          <option value="Germany">🇩🇪 Germany</option>
+          <option value="Turkey">🇹🇷 Turkey</option>
+          <option value="Bangladesh">🇧🇩 Bangladesh</option>
+          <option value="Pakistan">🇵🇰 Pakistan</option>
+        </select>
       </div>
 
-      <!-- Method selector -->
-      <div class="scan-methods">
-        <button class="scan-method-btn" id="btn-barcode-method" onclick="selectScanMethod('barcode')">
-          <span class="sm-icon">📷</span>
-          <span class="sm-title" id="t-barcode-method">Imbas Barcode</span>
-          <span class="sm-sub" id="t-barcode-sub">Kamera imbas kod bar</span>
+      <div class="scan-grid">
+        <button class="scan-opt" id="so-barcode" onclick="selScan('barcode')">
+          <span class="so-icon">📷</span>
+          <span class="so-title" id="t-soBarcode">Scan Barcode</span>
+          <span class="so-sub" id="t-soBsub">Camera scans barcode</span>
         </button>
-        <button class="scan-method-btn" id="btn-photo-method" onclick="selectScanMethod('photo')">
-          <span class="sm-icon">🖼️</span>
-          <span class="sm-title" id="t-photo-method">Foto Label</span>
-          <span class="sm-sub" id="t-photo-sub">Ambil gambar label produk</span>
+        <button class="scan-opt" id="so-photo" onclick="selScan('photo')">
+          <span class="so-icon">🖼️</span>
+          <span class="so-title" id="t-soPhoto">Photo Label</span>
+          <span class="so-sub" id="t-soPsub">Take photo of product</span>
         </button>
       </div>
 
-      <!-- Barcode scanner area -->
-      <div id="camera-area">
-        <div id="barcode-scanner">
-          <video id="scanVideo" autoplay playsinline muted></video>
-          <div class="scan-overlay">
-            <div class="scan-frame"><div class="scan-line"></div></div>
-          </div>
+      <div id="camArea">
+        <div id="bcScanner">
+          <video id="scanVid" autoplay playsinline muted></video>
+          <div class="scan-ov"><div class="scan-fr"><div class="scan-ln"></div></div></div>
         </div>
-        <div style="margin-top:10px;display:flex;gap:8px;">
-          <button class="btn btn-secondary" onclick="stopScanner()" style="flex:1;" id="t-stop-scan">⏹ Henti Kamera</button>
-        </div>
-        <div style="margin-top:10px;">
-          <div class="card-title" id="t-manual-label">Atau masukkan kod barcode secara manual:</div>
-          <div class="manual-input">
-            <input type="text" id="manualBarcode" placeholder="e.g. 9556032123456" inputmode="numeric">
-            <button class="btn btn-primary" style="width:auto;padding:11px 16px;" onclick="lookupManual()" id="t-search-btn">🔍</button>
-          </div>
+        <button class="btn btn-secondary" onclick="stopCam()" style="margin-top:8px;" id="t-stopCam">⏹ Stop Camera</button>
+        <p class="section-label" style="margin-top:12px;" id="t-manualLbl">Or enter barcode manually:</p>
+        <div class="man-row">
+          <input type="text" id="manBC" placeholder="e.g. 9556032123456" inputmode="numeric">
+          <button class="btn btn-primary" style="width:auto;padding:9px 13px;" onclick="lookupBC(document.getElementById('manBC').value)">🔍</button>
         </div>
       </div>
 
-      <!-- Photo area -->
-      <div id="photo-area">
-        <div class="photo-preview" onclick="triggerPhotoInput()">
-          <div class="photo-placeholder" id="photoPlaceholder">
-            <div class="pp-icon">📸</div>
-            <p id="t-photo-tap">Ketik untuk ambil gambar<br>atau pilih dari galeri</p>
-          </div>
-          <img id="photoPreviewImg" alt="Product photo">
+      <div id="photoArea">
+        <div class="photo-drop" onclick="document.getElementById('photoFile').click()">
+          <div class="ph-holder" id="phHolder"><div class="phi">📸</div><p id="t-phTap">Tap to take photo<br>or pick from gallery</p></div>
+          <img id="phPreview" alt="">
         </div>
-        <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhotoSelected(event)">
-        <button class="btn btn-primary" onclick="triggerPhotoInput()" id="t-take-photo">📸 Ambil / Pilih Gambar</button>
-        <div style="margin-top:10px;">
-          <div class="card-title" style="margin-bottom:6px;" id="t-or-name">Atau masukkan nama produk:</div>
-          <div class="manual-input">
-            <input type="text" id="photoProductName" placeholder="e.g. Milo 1kg">
-            <button class="btn btn-primary" style="width:auto;padding:11px 16px;" onclick="lookupByName()" id="t-search-name">🔍</button>
-          </div>
+        <input type="file" id="photoFile" accept="image/*" capture="environment" onchange="onScanPhoto(event)" style="display:none;">
+        <button class="btn btn-primary" onclick="document.getElementById('photoFile').click()" id="t-takePh">📸 Take / Choose Photo</button>
+        <p class="section-label" style="margin-top:12px;" id="t-orName">Or enter product name:</p>
+        <div class="man-row">
+          <input type="text" id="phName" placeholder="e.g. Milo 1kg">
+          <button class="btn btn-primary" style="width:auto;padding:9px 13px;" onclick="lookupName()">🔍</button>
         </div>
       </div>
 
-      <!-- Loader -->
-      <div class="loader" id="scanLoader">
-        <div class="spinner"></div>
-        <div class="loader-text" id="t-loading">Sedang semak produk...</div>
-      </div>
+      <div class="loader" id="scanLoader"><div class="spin"></div><div class="spin-txt" id="t-loading">Checking product...</div></div>
 
-      <!-- Result -->
-      <div id="scan-result">
+      <div id="scanResult">
         <div class="card">
-          <div id="resultProductName" class="result-product-name"></div>
-          <div id="resultBrand" class="result-brand"></div>
-
-          <div class="info-row">
-            <div class="info-icon">☪️</div>
-            <div class="info-body">
-              <div class="info-label" id="t-halal-label">Status Halal</div>
-              <div class="info-value" id="resultHalal"></div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-icon">🌍</div>
-            <div class="info-body">
-              <div class="info-label" id="t-origin-label">Negara Asal</div>
-              <div class="info-value" id="resultOrigin"></div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-icon">🧪</div>
-            <div class="info-body">
-              <div class="info-label" id="t-ingredients-label">Bahan-Bahan</div>
-              <div class="info-value" id="resultIngredients" style="font-size:13px;line-height:1.6;color:var(--text2);"></div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-icon">🚨</div>
-            <div class="info-body">
-              <div class="info-label" id="t-allergen-label">Alergen</div>
-              <div class="info-value" id="resultAllergens"></div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-icon">⚠️</div>
-            <div class="info-body">
-              <div class="info-label" id="t-warning-label">Amaran / Bahaya</div>
-              <div class="info-value" id="resultWarnings"></div>
-            </div>
-          </div>
+          <div class="rp-name" id="rpName"></div>
+          <div class="rp-brand" id="rpBrand"></div>
+          <div class="audience-row" id="audienceRow"></div>
+          <div class="info-row"><div class="ir-icon">☪️</div><div><div class="ir-label" id="t-halalLbl">Halal Status</div><div class="ir-val" id="rpHalal"></div></div></div>
+          <div class="info-row"><div class="ir-icon">🌍</div><div><div class="ir-label" id="t-originLbl">Country of Origin</div><div class="ir-val" id="rpOrigin"></div></div></div>
+          <div class="info-row"><div class="ir-icon">🧪</div><div><div class="ir-label" id="t-ingLbl">Ingredients</div><div class="ir-val" id="rpIng" style="font-size:0.7rem;color:var(--text2);line-height:1.55;max-height:80px;overflow-y:auto;"></div></div></div>
+          <div class="info-row"><div class="ir-icon">🚨</div><div><div class="ir-label" id="t-allerLbl">Allergens</div><div class="ir-val" id="rpAllergens"></div></div></div>
+          <div class="info-row"><div class="ir-icon">⚠️</div><div><div class="ir-label" id="t-warnLbl">Warnings / Dangers</div><div class="ir-val" id="rpWarn"></div></div></div>
         </div>
-
-        <!-- AI Fallback section -->
-        <div class="ai-section" id="aiSection">
-          <div class="ai-section-title" id="t-ai-more">Maklumat tidak lengkap? Tanya AI atau cari lagi:</div>
+        <div class="ai-block">
+          <div class="ai-lbl" id="t-aiMore">Info incomplete? Ask AI or search more:</div>
           <div class="ai-grid">
-            <a class="ai-btn google" id="ai-google" target="_blank"><span class="ai-logo">🔍</span> Google</a>
-            <a class="ai-btn chatgpt" id="ai-chatgpt" target="_blank"><span class="ai-logo">🤖</span> ChatGPT</a>
-            <a class="ai-btn copilot" id="ai-copilot" target="_blank"><span class="ai-logo">🪟</span> Copilot</a>
-            <a class="ai-btn gemini" id="ai-gemini" target="_blank"><span class="ai-logo">✨</span> Gemini</a>
+            <a class="ai-a" id="aiGoogle" target="_blank"><span class="ail">🔍</span>Google</a>
+            <a class="ai-a" id="aiGPT" target="_blank"><span class="ail">🤖</span>ChatGPT</a>
+            <a class="ai-a" id="aiCopilot" target="_blank"><span class="ail">🪟</span>Copilot</a>
+            <a class="ai-a" id="aiGemini" target="_blank"><span class="ail">✨</span>Gemini</a>
           </div>
-          <a class="ai-btn claude" id="ai-claude" target="_blank" style="width:100%;justify-content:center;"><span class="ai-logo">🧠</span> Claude AI</a>
+          <a class="ai-a" id="aiClaude" target="_blank" style="width:100%;justify-content:center;"><span class="ail">🧠</span>Claude AI</a>
         </div>
-
-        <button class="btn btn-secondary" onclick="resetScan()" style="margin-top:12px;" id="t-scan-again">🔄 Imbas Semula</button>
+        <button class="btn btn-secondary" onclick="resetScan()" style="margin-top:12px;" id="t-scanAgain">🔄 Scan Again</button>
       </div>
-
-      <!-- Default empty state -->
-      <div class="empty" id="scanEmpty">
-        <div class="empty-icon">🔬</div>
-        <p id="t-scan-empty">Pilih kaedah imbasan di atas<br>untuk semak produk anda</p>
-      </div>
+      <div class="empty-state" id="scanEmpty"><div class="ei">🔬</div><p id="t-scanEmpty">Choose a scan method above<br>to check your product</p></div>
     </div>
 
-  </div>
+    <!-- ══ SURVEY ══ -->
+    <div class="page" id="pg-survey">
+      <div class="topbar"><h1 id="t-svH">📷 Survey</h1></div>
+      <p style="font-size:0.68rem;color:var(--text2);margin-bottom:12px;" id="t-svSub">Photo price tags &amp; save to device</p>
+      <div class="card">
+        <div class="sv-capture" id="svCapture" onclick="document.getElementById('svFile').click()">
+          <div class="sv-ph" id="svPlaceholder"><div class="svpi">📸</div><p id="t-svTap">Tap to take photo of price tag</p></div>
+          <img id="svPreview" alt="">
+        </div>
+        <input type="file" id="svFile" accept="image/*" capture="environment" onchange="onSvPhoto(event)" style="display:none;">
+        <div class="field-group" style="margin-top:10px;">
+          <label class="field-label" id="t-svStoreLbl">Store Name</label>
+          <input type="text" id="svStore" placeholder="e.g. Lotus's, Giant, Mydin">
+        </div>
+        <div class="field-group">
+          <label class="field-label" id="t-svNoteLbl">Note / Item</label>
+          <textarea id="svNote" rows="2" placeholder="e.g. Milo 1kg RM 8.90"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="saveSurvey()" id="t-svSave">💾 Save Photo</button>
+      </div>
+      <div class="sg-header">
+        <div class="sg-title" id="t-svGallery">Saved Photos</div>
+        <button class="sg-clear" onclick="clearSurvey()" id="t-svClear">Clear All</button>
+      </div>
+      <div class="sg-grid" id="sgGrid"></div>
+      <div class="empty-state" id="sgEmpty"><div class="ei">🗂️</div><p id="t-sgEmpty">No photos saved yet.<br>Take a photo above!</p></div>
+    </div>
 
-  <!-- BOTTOM NAV -->
+  </div><!-- /pages -->
+
   <nav>
-    <button class="nav-btn active" onclick="showPage('compare',this)">
-      <span class="ni">🔍</span>
-      <span id="nav-compare">Bandingkan</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('list',this)">
-      <span class="ni">🛒</span>
-      <span id="nav-list">Senarai</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('history',this)">
-      <span class="ni">📋</span>
-      <span id="nav-history">Sejarah</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('scan',this)">
-      <span class="ni">🔬</span>
-      <span id="nav-scan">Semak</span>
-    </button>
+    <button class="nb active" onclick="showPg('compare',this)"><span class="ni">🔍</span><span id="nl-compare">Compare</span></button>
+    <button class="nb" onclick="showPg('list',this)"><span class="ni">🛒</span><span id="nl-list">List</span></button>
+    <button class="nb" onclick="showPg('history',this)"><span class="ni">📋</span><span id="nl-history">History</span></button>
+    <button class="nb" onclick="showPg('scan',this)"><span class="ni">🔬</span><span id="nl-scan">Scan</span></button>
+    <button class="nb" onclick="showPg('survey',this)"><span class="ni">📷</span><span id="nl-survey">Survey</span></button>
   </nav>
 </div>
 
 <script>
-// ============ LANGUAGE ============
-let lang = 'my';
-const T = {
-  my: {
-    splashTitle:'Jimat', splashSub:'Beli Bijak · Jimat Lebih',
-    'compare-title':'🔍 Bandingkan','compare-sub':'Masukkan harga dari kedai berbeza',
-    'item-name':'Nama Produk','stores':'Kedai & Harga','add-store':'+ Tambah Kedai',
-    'compare-btn':'🔍 Bandingkan Harga','result-title':'Keputusan','share-btn':'📲 Kongsi via WhatsApp',
-    'list-title':'🛒 Senarai Beli','list-sub':'Senarai belanja anda','list-empty':'Senarai kosong.<br>Tambah item di atas!',
-    'hist-title':'📋 Sejarah','hist-sub':'Perbandingan lepas','hist-empty':'Tiada sejarah lagi.<br>Cuba bandingkan harga dulu!',
-    'scan-title':'🔬 Semak Produk','scan-sub':'Imbas barcode atau ambil gambar produk',
-    'barcode-method':'Imbas Barcode','barcode-sub':'Kamera imbas kod bar',
-    'photo-method':'Foto Label','photo-sub':'Ambil gambar label produk',
-    'stop-scan':'⏹ Henti Kamera','manual-label':'Atau masukkan kod barcode secara manual:','search-btn':'🔍',
-    'photo-tap':'Ketik untuk ambil gambar<br>atau pilih dari galeri',
-    'take-photo':'📸 Ambil / Pilih Gambar','or-name':'Atau masukkan nama produk:','search-name':'🔍',
-    'loading':'Sedang semak produk...','halal-label':'Status Halal','origin-label':'Negara Asal',
-    'ingredients-label':'Bahan-Bahan','allergen-label':'Alergen','warning-label':'Amaran / Bahaya',
-    'ai-more':'Maklumat tidak lengkap? Tanya AI atau cari lagi:',
-    'scan-again':'🔄 Imbas Semula','scan-empty':'Pilih kaedah imbasan di atas<br>untuk semak produk anda',
-    'nav-compare':'Bandingkan','nav-list':'Senarai','nav-history':'Sejarah','nav-scan':'Semak',
-    'store-ph':'Nama kedai','price-ph':'Harga (RM)',
-    'halal-yes':'✅ Halal','halal-no':'❌ Tidak Halal','halal-unknown':'❓ Tidak Diketahui',
-    'origin-unknown':'Tidak diketahui','ingredients-none':'Tiada maklumat',
-    'allergen-none':'Tiada alergen dikesan','warning-none':'Tiada amaran',
-    'not-found':'Produk tidak dijumpai dalam pangkalan data. Cuba cari menggunakan AI di bawah.',
-    'ai-prompt':'Adakah [PRODUCT] halal? Apakah bahaya bahan-bahannya? Dari negara mana?',
+// ════════════════════════════════════════
+//  LANGUAGE
+// ════════════════════════════════════════
+let lang='en';
+const TX={
+  en:{
+    spTitle:'Jimat',spSub:'Shop Smart · Save More',
+    tag:'Supermarket Tool',h1:'Price Compare',sub:'Find the best value per unit',
+    storesLbl:'Stores to compare',compare:'🔍 Compare Prices',clear:'Clear All',
+    currApply:'Use this currency',
+    listH:'🛒 Shopping List',liEmpty:'Your list is empty.<br>Add items above!',
+    histH:'📋 History',histEmpty:'No history yet.<br>Compare some prices first!',
+    scanH:'🔬 Scan & Check',scanSub:'Scan barcode or photo the product label',
+    soBarcode:'Scan Barcode',soBsub:'Camera scans barcode',
+    soPhoto:'Photo Label',soPsub:'Take photo of product',
+    stopCam:'⏹ Stop Camera',manualLbl:'Or enter barcode manually:',
+    phTap:'Tap to take photo<br>or pick from gallery',
+    takePh:'📸 Take / Choose Photo',orName:'Or enter product name:',
+    loading:'Checking product...',
+    halalLbl:'Halal Status',originLbl:'Country of Origin',
+    ingLbl:'Ingredients',allerLbl:'Allergens',warnLbl:'Warnings / Dangers',
+    aiMore:'Info incomplete? Ask AI or search more:',
+    scanAgain:'🔄 Scan Again',scanEmpty:'Choose a scan method above<br>to check your product',
+    svH:'📷 Survey',svSub:'Photo price tags & save to device',
+    svTap:'Tap to take photo of price tag',
+    svStoreLbl:'Store Name',svNoteLbl:'Note / Item',svSave:'💾 Save Photo',
+    svGallery:'Saved Photos',svClear:'Clear All',
+    sgEmpty:'No photos saved yet.<br>Take a photo above!',
+    svShareBtn:'📤 Share',svDeleteBtn:'🗑️ Delete',
+    nlCompare:'Compare',nlList:'List',nlHistory:'History',nlScan:'Scan',nlSurvey:'Survey',
+    namePh:'e.g. Milo 1kg',storePh:'Store name',
+    fieldName:'Name',fieldPrice:'Price',fieldSize:'Size / Qty',
+    verdictLabel:'Best Value',savePct:'Save',saveAmt:'Save',
+    halalYes:'✅ Halal',halalNo:'❌ Not Halal',halalUnk:'❓ Unknown',
+    originUnk:'Unknown',ingNone:'No information',
+    allerNone:'No allergens detected',warnNone:'No warnings',
+    notFound:'Product not found. Try the AI links below.',
+    aiPrompt:'Is [P] halal[LOC]? Is it vegetarian/vegan? What are the dangers? Country of origin?',
+    stores:'stores',addListPh:'Add item...',per100:'per 100',
+    locDetect:'Detecting location...',locFound:'📍 [LOC] detected',locFail:'Location unavailable — select manually',
   },
-  en: {
-    splashTitle:'BestBuy', splashSub:'Shop Smart · Save More',
-    'compare-title':'🔍 Compare','compare-sub':'Enter prices from different stores',
-    'item-name':'Product Name','stores':'Stores & Prices','add-store':'+ Add Store',
-    'compare-btn':'🔍 Compare Prices','result-title':'Results','share-btn':'📲 Share via WhatsApp',
-    'list-title':'🛒 Shopping List','list-sub':'Your grocery list','list-empty':'List is empty.<br>Add items above!',
-    'hist-title':'📋 History','hist-sub':'Past comparisons','hist-empty':'No history yet.<br>Try comparing prices first!',
-    'scan-title':'🔬 Scan & Check','scan-sub':'Scan barcode or photo the product label',
-    'barcode-method':'Scan Barcode','barcode-sub':'Camera scans barcode',
-    'photo-method':'Photo Label','photo-sub':'Take photo of product label',
-    'stop-scan':'⏹ Stop Camera','manual-label':'Or enter barcode manually:','search-btn':'🔍',
-    'photo-tap':'Tap to take a photo<br>or pick from gallery',
-    'take-photo':'📸 Take / Choose Photo','or-name':'Or enter product name:','search-name':'🔍',
-    'loading':'Checking product...','halal-label':'Halal Status','origin-label':'Country of Origin',
-    'ingredients-label':'Ingredients','allergen-label':'Allergens','warning-label':'Warnings / Dangers',
-    'ai-more':'Info incomplete? Ask AI or search more:',
-    'scan-again':'🔄 Scan Again','scan-empty':'Choose a scan method above<br>to check your product',
-    'nav-compare':'Compare','nav-list':'List','nav-history':'History','nav-scan':'Scan',
-    'store-ph':'Store name','price-ph':'Price (RM)',
-    'halal-yes':'✅ Halal','halal-no':'❌ Not Halal','halal-unknown':'❓ Unknown',
-    'origin-unknown':'Unknown','ingredients-none':'No information',
-    'allergen-none':'No allergens detected','warning-none':'No warnings',
-    'not-found':'Product not found in database. Try searching with AI below.',
-    'ai-prompt':'Is [PRODUCT] halal? What are the dangers of its ingredients? Country of origin?',
+  my:{
+    spTitle:'Jimat',spSub:'Beli Bijak · Jimat Lebih',
+    tag:'Alat Supermarket',h1:'Bandingkan Harga',sub:'Cari nilai terbaik seunit',
+    storesLbl:'Kedai untuk dibandingkan',compare:'🔍 Bandingkan Harga',clear:'Kosongkan',
+    currApply:'Guna mata wang ini',
+    listH:'🛒 Senarai Beli',liEmpty:'Senarai kosong.<br>Tambah item di atas!',
+    histH:'📋 Sejarah',histEmpty:'Tiada sejarah lagi.<br>Cuba bandingkan harga dulu!',
+    scanH:'🔬 Semak Produk',scanSub:'Imbas barcode atau ambil gambar label produk',
+    soBarcode:'Imbas Barcode',soBsub:'Kamera imbas kod bar',
+    soPhoto:'Foto Label',soPsub:'Ambil gambar label produk',
+    stopCam:'⏹ Henti Kamera',manualLbl:'Atau masukkan kod barcode:',
+    phTap:'Ketik untuk ambil gambar<br>atau pilih dari galeri',
+    takePh:'📸 Ambil / Pilih Gambar',orName:'Atau masukkan nama produk:',
+    loading:'Sedang semak produk...',
+    halalLbl:'Status Halal',originLbl:'Negara Asal',
+    ingLbl:'Bahan-Bahan',allerLbl:'Alergen',warnLbl:'Amaran / Bahaya',
+    aiMore:'Maklumat tidak lengkap? Tanya AI atau cari lagi:',
+    scanAgain:'🔄 Imbas Semula',scanEmpty:'Pilih kaedah imbasan di atas<br>untuk semak produk anda',
+    svH:'📷 Survei',svSub:'Foto tag harga & simpan ke peranti',
+    svTap:'Ketik untuk ambil gambar tag harga',
+    svStoreLbl:'Nama Kedai',svNoteLbl:'Nota / Item',svSave:'💾 Simpan Foto',
+    svGallery:'Foto Tersimpan',svClear:'Padam Semua',
+    sgEmpty:'Tiada foto disimpan.<br>Ambil foto di atas!',
+    svShareBtn:'📤 Kongsi',svDeleteBtn:'🗑️ Padam',
+    nlCompare:'Bandingkan',nlList:'Senarai',nlHistory:'Sejarah',nlScan:'Semak',nlSurvey:'Survei',
+    namePh:'cth: Milo 1kg',storePh:'Nama kedai',
+    fieldName:'Nama',fieldPrice:'Harga',fieldSize:'Saiz / Kuantiti',
+    verdictLabel:'Nilai Terbaik',savePct:'Jimat',saveAmt:'Jimat',
+    halalYes:'✅ Halal',halalNo:'❌ Tidak Halal',halalUnk:'❓ Tidak Diketahui',
+    originUnk:'Tidak diketahui',ingNone:'Tiada maklumat',
+    allerNone:'Tiada alergen dikesan',warnNone:'Tiada amaran',
+    notFound:'Produk tidak dijumpai. Cuba AI di bawah.',
+    aiPrompt:'Adakah [P] halal[LOC]? Adakah sesuai untuk vegetarian? Apakah bahayanya? Negara asal?',
+    stores:'kedai',addListPh:'Tambah item...',per100:'setiap 100',
+    locDetect:'Mengesan lokasi...',locFound:'📍 [LOC] dikesan',locFail:'Lokasi tidak tersedia — pilih manual',
   }
 };
+function t(k){return TX[lang][k]||k;}
 
-function t(key) { return T[lang][key] || key; }
+const TK=['tag','h1','sub','storesLbl','compare','clear','currApply',
+  'listH','liEmpty','histH','histEmpty',
+  'scanH','scanSub','soBarcode','soBsub','soPhoto','soPsub',
+  'stopCam','manualLbl','phTap','takePh','orName','loading',
+  'halalLbl','originLbl','ingLbl','allerLbl','warnLbl',
+  'aiMore','scanAgain','scanEmpty',
+  'svH','svSub','svTap','svStoreLbl','svNoteLbl','svSave',
+  'svGallery','svClear','sgEmpty'];
 
-function setLang(l) {
-  lang = l;
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
-  applyLang();
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lbtn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
+  applyLang();renderItems();renderLI();renderHist();renderSurveyGallery();
 }
-
-function applyLang() {
-  const keys = ['compare-title','compare-sub','item-name','stores','add-store','compare-btn','result-title','share-btn',
-    'list-title','list-sub','list-empty','hist-title','hist-sub','hist-empty',
-    'scan-title','scan-sub','barcode-method','barcode-sub','photo-method','photo-sub',
-    'stop-scan','manual-label','search-btn','photo-tap','take-photo','or-name','search-name',
-    'loading','halal-label','origin-label','ingredients-label','allergen-label','warning-label',
-    'ai-more','scan-again','scan-empty','nav-compare','nav-list','nav-history','nav-scan'];
-  keys.forEach(k => {
-    const el = document.getElementById('t-' + k);
-    if (el) el.innerHTML = t(k);
+function applyLang(){
+  TK.forEach(k=>{const el=document.getElementById('t-'+k);if(el)el.innerHTML=t(k);});
+  document.getElementById('spTitle').textContent=t('spTitle');
+  document.getElementById('spSub').textContent=t('spSub');
+  ['compare','list','history','scan','survey'].forEach(p=>{
+    const el=document.getElementById('nl-'+p);
+    if(el)el.textContent=t('nl'+p.charAt(0).toUpperCase()+p.slice(1));
   });
-  document.getElementById('splashTitle').textContent = t('splashTitle');
-  document.getElementById('splashSub').textContent = t('splashSub');
-  // Update store placeholders
-  document.querySelectorAll('.store-name-inp').forEach(i => i.placeholder = t('store-ph'));
-  document.querySelectorAll('.store-price-inp').forEach(i => i.placeholder = t('price-ph'));
+  document.getElementById('liInput').placeholder=t('addListPh');
+  document.getElementById('svStore').placeholder=lang==='my'?'cth: Lotus\'s, Giant':'e.g. Lotus\'s, Giant';
+  document.getElementById('svNote').placeholder=lang==='my'?'cth: Milo 1kg RM 8.90':'e.g. Milo 1kg RM 8.90';
 }
 
-// ============ NAVIGATION ============
-function showPage(name, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
+// ════════════════════════════════════════
+//  NAV
+// ════════════════════════════════════════
+function showPg(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
   btn.classList.add('active');
-  if (name !== 'scan') stopScanner();
+  if(name!=='scan')stopCam();
 }
 
-// ============ COMPARE ============
-let stores = [];
-function addStore() {
-  const id = Date.now();
-  stores.push(id);
-  const div = document.createElement('div');
-  div.className = 'store-row';
-  div.id = 'store-' + id;
-  div.innerHTML = `<input class="store-name-inp" type="text" placeholder="${t('store-ph')}" oninput="updateStore(${id},'name',this.value)">
-    <input class="store-price-inp" type="number" inputmode="decimal" placeholder="${t('price-ph')}" style="max-width:120px;" oninput="updateStore(${id},'price',this.value)">
-    <button class="del-btn" onclick="removeStore(${id})">✕</button>`;
-  document.getElementById('storeList').appendChild(div);
-}
-let storeData = {};
-function updateStore(id, field, val) { if (!storeData[id]) storeData[id]={}; storeData[id][field]=val; }
-function removeStore(id) { document.getElementById('store-' + id)?.remove(); stores = stores.filter(s=>s!==id); delete storeData[id]; }
+// ════════════════════════════════════════
+//  CURRENCY CONVERTER
+// ════════════════════════════════════════
+const CSYM={MYR:'RM',USD:'$',SGD:'S$',THB:'฿',IDR:'Rp',AED:'د.إ',SAR:'﷼',JPY:'¥',CNY:'¥',EUR:'€',GBP:'£',AUD:'A$',KRW:'₩',INR:'₹',BDT:'৳',PKR:'₨'};
+const OFFLINE={MYR:1,USD:0.213,SGD:0.288,THB:7.52,IDR:3380,AED:0.782,SAR:0.799,JPY:32.1,CNY:1.54,EUR:0.197,GBP:0.168,AUD:0.323,KRW:283,INR:17.7,BDT:23.4,PKR:59.5};
+let currRates={},currBase='MYR',activeCurrSym='RM';
 
-function compareNow() {
-  const name = document.getElementById('itemName').value.trim() || 'Produk';
-  const valid = stores.map(id => storeData[id]).filter(s => s && s.name && s.price && !isNaN(s.price));
-  if (valid.length < 2) { alert(lang==='my'?'Masukkan sekurang-kurang 2 kedai dengan harga!':'Enter at least 2 stores with prices!'); return; }
-  valid.sort((a,b) => parseFloat(a.price)-parseFloat(b.price));
-  const minPrice = parseFloat(valid[0].price);
-  const rl = document.getElementById('resultList');
-  rl.innerHTML = '';
-  valid.forEach((s,i) => {
-    const save = (parseFloat(s.price)-minPrice).toFixed(2);
-    const div = document.createElement('div');
-    div.className = 'result-bar ' + (i===0?'best':'rest');
-    div.innerHTML = `<div class="result-rank">${i===0?'🏆':i===1?'🥈':'🥉'}</div>
-      <div class="result-info">
-        <div class="result-store">${s.name}</div>
-        <div class="result-price">RM ${parseFloat(s.price).toFixed(2)}</div>
-        ${i>0?`<div class="result-save">+RM ${save} ${lang==='my'?'lebih mahal':'more expensive'}</div>`:'<div class="result-save">${lang==="my"?"Harga Terbaik ✨":"Best Price ✨"}</div>'}
+function toggleCurr(){
+  const p=document.getElementById('currPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open'))fetchRates();
+}
+
+async function fetchRates(){
+  const from=document.getElementById('currFrom').value;
+  document.getElementById('currRate').textContent=lang==='my'?'Mendapatkan kadar...':'Fetching live rate...';
+  try{
+    const r=await fetch('https://api.frankfurter.app/latest?from='+from);
+    const d=await r.json();
+    currRates=d.rates;currRates[from]=1;currBase=from;
+    calcCurr();
+  }catch(e){
+    document.getElementById('currRate').textContent=lang==='my'?'Tiada internet — kadar anggaran':'No internet — approximate rates';
+    const fb=OFFLINE[from]||1;
+    currRates={};
+    for(const[k,v]of Object.entries(OFFLINE))currRates[k]=v/fb;
+    currBase=from;calcCurr();
+  }
+}
+
+function onCurrChange(){
+  const from=document.getElementById('currFrom').value;
+  if(from!==currBase)fetchRates();else calcCurr();
+}
+
+function calcCurr(){
+  const from=document.getElementById('currFrom').value;
+  const to=document.getElementById('currTo').value;
+  const amt=parseFloat(document.getElementById('currAmt').value)||1;
+  if(!currRates[to]){fetchRates();return;}
+  const rate=currRates[to];
+  const result=amt*rate;
+  const sym=CSYM[to]||to;
+  document.getElementById('currResult').textContent=sym+(result>=1000?result.toFixed(0):result>=10?result.toFixed(2):result.toFixed(4));
+  document.getElementById('currRate').textContent=`1 ${from} = ${sym}${rate>=100?rate.toFixed(2):rate.toFixed(4)} ${to}`;
+}
+
+function swapCurr(){
+  const f=document.getElementById('currFrom');
+  const t2=document.getElementById('currTo');
+  [f.value,t2.value]=[t2.value,f.value];
+  fetchRates();
+}
+
+function applyCurr(){
+  const from=document.getElementById('currFrom').value;
+  activeCurrSym=CSYM[from]||from;
+  document.getElementById('currBtn').textContent=activeCurrSym+' ▾';
+  document.getElementById('currPanel').classList.remove('open');
+  renderItems();
+}
+
+// ════════════════════════════════════════
+//  COMPARE — horizontal scroll
+// ════════════════════════════════════════
+const UNITS=["g","kg","ml","L","oz","lb","count"];
+let items=[];
+
+function toBase(v,u){return u==='kg'?v*1000:u==='L'?v*1000:u==='oz'?v*28.3495:u==='lb'?v*453.592:v;}
+function ppu(price,qty,unit){const b=toBase(qty,unit);if(!b)return null;const m=(unit==='g'||unit==='ml')?100:1;return{value:(price/b)*m,label:`${t('per100')} ${unit}`,m};}
+
+function addItem(){
+  items.push({name:'',price:'',qty:'',unit:'g'});
+  renderItems();
+  // scroll add button into view
+  setTimeout(()=>{
+    const wrap=document.getElementById('compareScrollWrap');
+    wrap.scrollTo({left:wrap.scrollWidth,behavior:'smooth'});
+  },50);
+}
+
+function clearItems(){
+  items=[];renderItems();
+  document.getElementById('verdict').innerHTML='';
+}
+
+function updateItem(i,f,v){if(items[i])items[i][f]=v;}
+function removeItem(i){items.splice(i,1);renderItems();}
+
+function renderItems(){
+  const inner=document.getElementById('itemsInner');
+  inner.innerHTML='';
+  items.forEach((item,i)=>{
+    const c=document.createElement('div');
+    c.className='item-card';
+    c.innerHTML=`
+      <button class="del-x" onclick="removeItem(${i})">✕</button>
+      <div class="item-num">${t('fieldName')} ${i+1}</div>
+      <div class="field-group">
+        <label class="field-label">${t('fieldName')}</label>
+        <input type="text" value="${item.name}" placeholder="${t('namePh')}" oninput="updateItem(${i},'name',this.value)" style="font-size:0.78rem;">
+      </div>
+      <div class="field-group">
+        <label class="field-label">${t('fieldPrice')}</label>
+        <div class="field-row">
+          <span class="currency-sym">${activeCurrSym}</span>
+          <input type="number" min="0" step="0.01" value="${item.price}" placeholder="0.00" oninput="updateItem(${i},'price',this.value)" style="font-size:0.78rem;">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">${t('fieldSize')}</label>
+        <div class="unit-row">
+          <input type="number" min="0" value="${item.qty}" placeholder="0" oninput="updateItem(${i},'qty',this.value)" style="font-size:0.78rem;">
+          <select onchange="updateItem(${i},'unit',this.value)" style="font-size:0.78rem;">
+            ${UNITS.map(u=>`<option value="${u}" ${item.unit===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
       </div>`;
-    rl.appendChild(div);
+    inner.appendChild(c);
   });
-  document.getElementById('compareResult').style.display = 'block';
-  // Save to history
-  const hist = JSON.parse(localStorage.getItem('jimat-history')||'[]');
-  hist.unshift({ date: new Date().toLocaleString(), item: name, winner: valid[0].name, price: valid[0].price, stores: valid });
-  localStorage.setItem('jimat-history', JSON.stringify(hist.slice(0,50)));
-  renderHistory();
-  window._lastCompare = { name, stores: valid };
+  // add button at end
+  const addBtn=document.createElement('div');
+  addBtn.className='item-card-add';
+  addBtn.onclick=addItem;
+  addBtn.title='Add store';
+  addBtn.textContent='＋';
+  inner.appendChild(addBtn);
 }
 
-function shareWhatsApp() {
-  if (!window._lastCompare) return;
-  const { name, stores } = window._lastCompare;
-  let msg = `🛒 *${name}* — ${lang==='my'?'Perbandingan Harga':'Price Comparison'}\n\n`;
-  stores.forEach((s,i) => { msg += `${i===0?'🏆':i+1+'.'}  ${s.name}: RM ${parseFloat(s.price).toFixed(2)}\n`; });
-  msg += `\n_${lang==='my'?'Dikongsi via Jimat App':'Shared via Jimat App'}_`;
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+function comparePrices(){
+  const parsed=items.map((item,i)=>{
+    const price=parseFloat(item.price),qty=parseFloat(item.qty);
+    if(!price||!qty)return null;
+    const p=ppu(price,qty,item.unit);if(!p)return null;
+    return{...item,price,qty,ppu:p,label:item.name||`${t('fieldName')} ${i+1}`};
+  }).filter(Boolean);
+  if(parsed.length<2){alert(lang==='my'?'Masukkan sekurang-kurang 2 item dengan harga & saiz!':'Enter at least 2 items with price & size!');return;}
+
+  const sorted=[...parsed].sort((a,b)=>a.ppu.value-b.ppu.value);
+  const best=sorted[0],worst=sorted[sorted.length-1];
+  const savPct=((worst.ppu.value-best.ppu.value)/worst.ppu.value*100).toFixed(1);
+  const wBase=toBase(worst.qty,worst.unit);
+  const savAmt=((worst.price/toBase(worst.qty,worst.unit)-best.price/toBase(best.qty,best.unit))*wBase).toFixed(2);
+
+  // highlight winner
+  document.querySelectorAll('.item-card').forEach((c,i)=>{
+    c.classList.toggle('winner',items[i]&&(items[i].name||`${t('fieldName')} ${i+1}`)===best.label);
+  });
+
+  const others=sorted.slice(1).map((s,i)=>`
+    <div class="vother">
+      <span class="vother-rank">${i===0?'🥈':i===1?'🥉':'➡️'}</span>
+      <span class="vother-name">${s.label}</span>
+      <span class="vother-ppu">${activeCurrSym}${s.ppu.value.toFixed(4)}</span>
+      <span class="vother-diff">+${((s.ppu.value-best.ppu.value)/best.ppu.value*100).toFixed(1)}%</span>
+    </div>`).join('');
+
+  document.getElementById('verdict').innerHTML=`
+    <div class="verdict-best">
+      <div class="verdict-lbl">🏆 ${t('verdictLabel')}</div>
+      <div class="verdict-name">${best.label}</div>
+      <div class="verdict-ppu">${activeCurrSym}${best.ppu.value.toFixed(4)} ${best.ppu.label}</div>
+      <div class="pill-row">
+        <span class="pill">💰 ${t('savePct')} ${savPct}%</span>
+        <span class="pill">🏷️ ${t('saveAmt')} ${activeCurrSym}${savAmt}</span>
+      </div>
+    </div>
+    ${others}
+    <button class="btn btn-wa" onclick="shareWA()" style="margin-top:10px;">📲 ${lang==='my'?'Kongsi via WhatsApp':'Share via WhatsApp'}</button>`;
+
+  // smooth scroll to verdict
+  setTimeout(()=>{
+    document.getElementById('verdict').scrollIntoView({behavior:'smooth',block:'start'});
+  },100);
+
+  const h=JSON.parse(localStorage.getItem('jh')||'[]');
+  h.unshift({date:new Date().toLocaleString(),best:best.label,price:best.price,sym:activeCurrSym,count:parsed.length});
+  localStorage.setItem('jh',JSON.stringify(h.slice(0,50)));
+  renderHist();
+  window._lastCmp={best,sorted};
 }
 
-// ============ SHOPPING LIST ============
-let listItems = JSON.parse(localStorage.getItem('jimat-list')||'[]');
-function addListItem() {
-  const inp = document.getElementById('listInput');
-  const val = inp.value.trim();
-  if (!val) return;
-  listItems.push({ id: Date.now(), text: val, done: false });
-  inp.value = '';
-  saveList(); renderList();
+function shareWA(){
+  if(!window._lastCmp)return;
+  const{sorted}=window._lastCmp;
+  let msg=`🛒 *${lang==='my'?'Perbandingan Harga':'Price Compare'}*\n\n`;
+  sorted.forEach((s,i)=>{msg+=`${i===0?'🏆':i+1+'.'} ${s.label}: ${activeCurrSym}${s.ppu.value.toFixed(4)} ${s.ppu.label}\n`;});
+  msg+=`\n_via Jimat App_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg));
 }
-function toggleListItem(id) {
-  const item = listItems.find(i=>i.id===id);
-  if (item) { item.done = !item.done; saveList(); renderList(); }
+
+// ════════════════════════════════════════
+//  SHOPPING LIST
+// ════════════════════════════════════════
+let liData=JSON.parse(localStorage.getItem('jli')||'[]');
+function addLI(){
+  const inp=document.getElementById('liInput');
+  const v=inp.value.trim();if(!v)return;
+  liData.push({id:Date.now(),text:v,done:false});
+  inp.value='';saveLI();renderLI();
+  // scroll to top of list
+  document.getElementById('pg-list').scrollTo({top:0,behavior:'smooth'});
 }
-function removeListItem(id) { listItems = listItems.filter(i=>i.id!==id); saveList(); renderList(); }
-function saveList() { localStorage.setItem('jimat-list', JSON.stringify(listItems)); }
-function renderList() {
-  const container = document.getElementById('listItems');
-  container.innerHTML = '';
-  document.getElementById('listEmpty').style.display = listItems.length ? 'none' : 'block';
-  listItems.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    div.innerHTML = `<div class="list-check ${item.done?'done':''}" onclick="toggleListItem(${item.id})">${item.done?'✓':''}</div>
-      <div class="list-text ${item.done?'done':''}">${item.text}</div>
-      <button class="del-btn" onclick="removeListItem(${item.id})">✕</button>`;
-    container.appendChild(div);
+function toggleLI(id){const x=liData.find(i=>i.id===id);if(x){x.done=!x.done;saveLI();renderLI();}}
+function removeLI(id){liData=liData.filter(i=>i.id!==id);saveLI();renderLI();}
+function saveLI(){localStorage.setItem('jli',JSON.stringify(liData));}
+function renderLI(){
+  const c=document.getElementById('liItems');c.innerHTML='';
+  document.getElementById('liEmpty').style.display=liData.length?'none':'block';
+  liData.forEach(item=>{
+    const d=document.createElement('div');
+    d.className='list-item-row'+(item.done?' done':'');
+    d.innerHTML=`<div class="chk${item.done?' on':''}" onclick="toggleLI(${item.id})">${item.done?'✓':''}</div>
+      <div class="li-txt${item.done?' done':''}">${item.text}</div>
+      <button class="del-x" style="position:relative;top:auto;right:auto;" onclick="removeLI(${item.id})">✕</button>`;
+    c.appendChild(d);
+  });
+}
+document.getElementById('liInput').addEventListener('keydown',e=>{if(e.key==='Enter')addLI();});
+
+// ════════════════════════════════════════
+//  HISTORY
+// ════════════════════════════════════════
+function renderHist(){
+  const h=JSON.parse(localStorage.getItem('jh')||'[]');
+  const c=document.getElementById('histList');c.innerHTML='';
+  document.getElementById('histEmpty').style.display=h.length?'none':'block';
+  h.forEach(x=>{
+    const d=document.createElement('div');d.className='hist-card';
+    d.innerHTML=`<div class="hist-date">${x.date}</div>
+      <div class="hist-win">🏆 ${x.best} — ${x.sym||'RM'}${parseFloat(x.price).toFixed(2)}</div>
+      <div class="hist-meta">${x.count} ${t('stores')}</div>`;
+    c.appendChild(d);
   });
 }
 
-// ============ HISTORY ============
-function renderHistory() {
-  const hist = JSON.parse(localStorage.getItem('jimat-history')||'[]');
-  const container = document.getElementById('historyList');
-  container.innerHTML = '';
-  document.getElementById('histEmpty').style.display = hist.length ? 'none' : 'block';
-  hist.forEach(h => {
-    const div = document.createElement('div');
-    div.className = 'hist-item';
-    div.innerHTML = `<div class="hist-date">${h.date}</div>
-      <div class="hist-winner">🏆 ${h.winner} — RM ${parseFloat(h.price).toFixed(2)}</div>
-      <div class="hist-detail">${h.item} · ${h.stores.length} ${lang==='my'?'kedai':'stores'}</div>`;
-    container.appendChild(div);
-  });
+// ════════════════════════════════════════
+//  LOCATION / GPS
+// ════════════════════════════════════════
+let userLocation='';
+
+function detectLocation(){
+  const btn=document.getElementById('locBtn');
+  const txt=document.getElementById('locText');
+  btn.textContent=lang==='my'?'...':'...';
+  txt.className='loc-text';
+  txt.textContent=t('locDetect');
+
+  if(!navigator.geolocation){txt.textContent=t('locFail');btn.textContent='Detect';return;}
+
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const{latitude:lat,longitude:lon}=pos.coords;
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+        .then(r=>r.json())
+        .then(d=>{
+          const country=d.address?.country||'';
+          const city=d.address?.city||d.address?.town||d.address?.state||'';
+          userLocation=city?`${city}, ${country}`:country;
+          txt.className='loc-text found';
+          txt.textContent=t('locFound').replace('[LOC]',userLocation);
+          btn.textContent=lang==='my'?'Tukar':'Change';
+          // also set dropdown
+          const sel=document.getElementById('countrySelect');
+          for(let i=0;i<sel.options.length;i++){
+            if(sel.options[i].value&&country.includes(sel.options[i].value.split(' ')[0])){
+              sel.value=sel.options[i].value;break;
+            }
+          }
+        })
+        .catch(()=>{userLocation='';txt.textContent=t('locFail');btn.textContent='Detect';});
+    },
+    ()=>{txt.textContent=t('locFail');btn.textContent='Detect';}
+  );
 }
 
-// ============ SCAN & CHECK ============
-let scanMethod = null;
-let quaggaRunning = false;
-let currentProductQuery = '';
-
-function selectScanMethod(method) {
-  scanMethod = method;
-  document.getElementById('btn-barcode-method').classList.toggle('selected', method==='barcode');
-  document.getElementById('btn-photo-method').classList.toggle('selected', method==='photo');
-  document.getElementById('camera-area').classList.toggle('visible', method==='barcode');
-  document.getElementById('photo-area').classList.toggle('visible', method==='photo');
-  document.getElementById('scanEmpty').style.display = 'none';
-  resetScanResult();
-  if (method === 'barcode') startScanner();
-  else stopScanner();
-}
-
-function startScanner() {
-  if (quaggaRunning) return;
-  const video = document.getElementById('scanVideo');
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => {
-        video.srcObject = stream;
-        window._scanStream = stream;
-      }).catch(err => {
-        console.log('Camera error:', err);
-      });
+function onCountryChange(val){
+  if(val){
+    userLocation=val;
+    const txt=document.getElementById('locText');
+    txt.className='loc-text found';
+    txt.textContent=t('locFound').replace('[LOC]',val);
   }
+}
 
+// ════════════════════════════════════════
+//  SCAN & CHECK
+// ════════════════════════════════════════
+let scanMode=null,qRunning=false,curQuery='';
+
+function selScan(mode){
+  scanMode=mode;
+  document.getElementById('so-barcode').classList.toggle('sel',mode==='barcode');
+  document.getElementById('so-photo').classList.toggle('sel',mode==='photo');
+  document.getElementById('camArea').classList.toggle('on',mode==='barcode');
+  document.getElementById('photoArea').classList.toggle('on',mode==='photo');
+  document.getElementById('scanEmpty').style.display='none';
+  clearScanResult();
+  if(mode==='barcode')startCam();else stopCam();
+}
+
+function startCam(){
+  if(qRunning)return;
+  navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment'}})
+    .then(s=>{document.getElementById('scanVid').srcObject=s;window._camStream=s;})
+    .catch(()=>{});
   Quagga.init({
-    inputStream: { name: 'Live', type: 'LiveStream', target: document.getElementById('barcode-scanner'),
-      constraints: { facingMode: 'environment' } },
-    decoder: { readers: ['ean_reader','ean_8_reader','code_128_reader','upc_reader','upc_e_reader'] }
-  }, err => {
-    if (err) { console.log('Quagga init error:', err); return; }
-    Quagga.start();
-    quaggaRunning = true;
-  });
-
-  Quagga.onDetected(data => {
-    const code = data.codeResult.code;
-    if (code) {
-      stopScanner();
-      lookupBarcode(code);
-    }
-  });
+    inputStream:{type:'LiveStream',target:document.getElementById('bcScanner'),constraints:{facingMode:'environment'}},
+    decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','upc_reader','upc_e_reader']}
+  },err=>{if(err)return;Quagga.start();qRunning=true;});
+  Quagga.onDetected(d=>{const c=d.codeResult.code;if(c){stopCam();doLookup(c);}});
 }
-
-function stopScanner() {
-  if (quaggaRunning) { try { Quagga.stop(); } catch(e){} quaggaRunning = false; }
-  if (window._scanStream) { window._scanStream.getTracks().forEach(t=>t.stop()); window._scanStream = null; }
+function stopCam(){
+  if(qRunning){try{Quagga.stop();}catch(e){}qRunning=false;}
+  if(window._camStream){window._camStream.getTracks().forEach(t=>t.stop());window._camStream=null;}
 }
-
-function lookupManual() {
-  const code = document.getElementById('manualBarcode').value.trim();
-  if (!code) return;
-  lookupBarcode(code);
+function lookupBC(code){code=code.trim();if(!code)return;doLookup(code);}
+function lookupName(){
+  const n=document.getElementById('phName').value.trim();if(!n)return;
+  curQuery=n;showLoad();
+  fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(n)}&action=process&json=1&page_size=1`)
+    .then(r=>r.json()).then(d=>{hideLoad();d.products?.length?showProduct(d.products[0]):showNotFound(n);})
+    .catch(()=>{hideLoad();showNotFound(n);});
 }
-
-function lookupBarcode(code) {
-  currentProductQuery = code;
-  showLoader();
+function onScanPhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const img=document.getElementById('phPreview');
+  img.src=URL.createObjectURL(f);img.style.display='block';
+  document.getElementById('phHolder').style.display='none';
+  document.getElementById('phName').focus();
+}
+function doLookup(code){
+  curQuery=code;showLoad();
   fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
-    .then(r => r.json())
-    .then(data => {
-      hideLoader();
-      if (data.status === 1) displayProduct(data.product);
-      else showNotFound(code);
-    })
-    .catch(() => { hideLoader(); showNotFound(code); });
+    .then(r=>r.json()).then(d=>{hideLoad();d.status===1?showProduct(d.product):showNotFound(code);})
+    .catch(()=>{hideLoad();showNotFound(code);});
 }
 
-function lookupByName() {
-  const name = document.getElementById('photoProductName').value.trim();
-  if (!name) return;
-  currentProductQuery = name;
-  showLoader();
-  fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(name)}&search_simple=1&action=process&json=1&page_size=1`)
-    .then(r => r.json())
-    .then(data => {
-      hideLoader();
-      if (data.products && data.products.length > 0) displayProduct(data.products[0]);
-      else showNotFound(name);
-    })
-    .catch(() => { hideLoader(); showNotFound(name); });
+function detectAudience(p){
+  const badges=[];
+  const ing=(p.ingredients_text||'').toLowerCase();
+  const tags=p.labels_tags||[];
+  const cats=(p.categories_tags||[]).join(' ').toLowerCase();
+  const al=p.allergens_tags||[];
+
+  // Vegetarian / Vegan
+  const isVeg=tags.some(l=>l.includes('vegetarian')||l.includes('vegan'));
+  const hasAnimal=ing.includes('chicken')||ing.includes('beef')||ing.includes('pork')||ing.includes('fish')||ing.includes('meat')||ing.includes('lard')||al.some(a=>a.includes('fish'));
+  if(isVeg||(!hasAnimal&&ing.length>10))badges.push({cls:'aud-veg',tx:'🌱 '+(lang==='my'?'Mesra Vegetarian':'Vegetarian Friendly')});
+
+  // Food & Drink
+  if(cats.includes('food')||cats.includes('beverage')||cats.includes('drink')||cats.includes('snack')||cats.includes('sauce')||cats.includes('dairy')||cats.includes('cereal'))
+    badges.push({cls:'aud-food',tx:'🍽️ '+(lang==='my'?'Makanan/Minuman':'Food & Drink')});
+
+  // Medicine / Supplement
+  if(cats.includes('supplement')||cats.includes('medicine')||cats.includes('vitamin')||cats.includes('health'))
+    badges.push({cls:'aud-med',tx:'💊 '+(lang==='my'?'Suplemen/Kesihatan':'Supplement / Health')});
+
+  // Travel safe (no alcohol, no restricted)
+  const hasAlc=ing.includes('alcohol')||ing.includes('wine')||ing.includes('beer')||tags.some(l=>l.includes('alcohol'));
+  if(!hasAlc)badges.push({cls:'aud-travel',tx:'✈️ '+(lang==='my'?'Sesuai Untuk Traveler':'Travel Friendly')});
+
+  return badges;
 }
 
-function triggerPhotoInput() {
-  document.getElementById('photo-input').click();
+function showProduct(p){
+  const name=p.product_name||p.product_name_en||'Unknown';
+  const brand=p.brands||'';
+  curQuery=name+(brand?' '+brand:'');
+  document.getElementById('rpName').textContent=name;
+  document.getElementById('rpBrand').textContent=brand?'🏷️ '+brand:'';
+
+  // Audience badges
+  const aud=detectAudience(p);
+  document.getElementById('audienceRow').innerHTML=aud.map(b=>`<span class="aud-badge ${b.cls}">${b.tx}</span>`).join('');
+
+  // Halal
+  const ltags=p.labels_tags||[];
+  const hEl=document.getElementById('rpHalal');
+  if(ltags.some(l=>l.includes('halal')))
+    hEl.innerHTML=`<span class="badge b-green">${t('halalYes')}</span>${p.labels?`<br><span style="font-size:0.68rem;color:var(--text2)">📜 ${p.labels}</span>`:''}`;
+  else if(ltags.some(l=>l.includes('non-halal')||l.includes('pork')||l.includes('alcohol')))
+    hEl.innerHTML=`<span class="badge b-red">${t('halalNo')}</span>`;
+  else hEl.innerHTML=`<span class="badge b-grey">${t('halalUnk')}</span>`;
+
+  document.getElementById('rpOrigin').textContent=p.countries||p.manufacturing_places||t('originUnk');
+  document.getElementById('rpIng').textContent=p.ingredients_text||p.ingredients_text_en||t('ingNone');
+
+  const aEl=document.getElementById('rpAllergens');
+  const al=p.allergens_tags||[];
+  aEl.innerHTML=al.length?al.map(a=>`<span class="badge b-red">⚠️ ${a.replace(/^en:/,'').replace(/-/g,' ')}</span>`).join(''):`<span class="badge b-green">${t('allerNone')}</span>`;
+
+  const warns=[];const nm=p.nutriments||{};
+  if(al.some(a=>a.includes('gluten')))warns.push({c:'b-red',tx:lang==='my'?'⚠️ Mengandungi Gluten':'⚠️ Contains Gluten'});
+  if(al.some(a=>a.includes('peanut')||a.includes('nut')))warns.push({c:'b-red',tx:lang==='my'?'🥜 Kacang (Alergen)':'🥜 Nuts (Allergen)'});
+  if(al.some(a=>a.includes('milk')))warns.push({c:'b-yellow',tx:lang==='my'?'🥛 Mengandungi Susu':'🥛 Contains Milk'});
+  if((p.ingredients_text||'').toLowerCase().includes('pork')||al.some(a=>a.includes('pork')))warns.push({c:'b-red',tx:lang==='my'?'🐷 Mengandungi Babi':'🐷 Contains Pork'});
+  if(nm['sugars_100g']>20)warns.push({c:'b-yellow',tx:lang==='my'?'🍬 Gula Tinggi':'🍬 High Sugar'});
+  if(nm['sodium_100g']>0.6)warns.push({c:'b-yellow',tx:lang==='my'?'🧂 Natrium Tinggi':'🧂 High Sodium'});
+  if(nm['saturated-fat_100g']>5)warns.push({c:'b-yellow',tx:lang==='my'?'🧈 Lemak Tepu Tinggi':'🧈 High Saturated Fat'});
+  if(p.nova_group===4)warns.push({c:'b-red',tx:lang==='my'?'🏭 Ultra-Diproses (NOVA 4)':'🏭 Ultra-Processed (NOVA 4)'});
+  if((p.additives_tags||[]).length>5)warns.push({c:'b-yellow',tx:lang==='my'?`🧪 ${p.additives_tags.length} bahan tambah`:`🧪 ${p.additives_tags.length} additives`});
+  document.getElementById('rpWarn').innerHTML=warns.length?warns.map(w=>`<span class="badge ${w.c}">${w.tx}</span>`).join(''):`<span class="badge b-green">✅ ${t('warnNone')}</span>`;
+
+  setAI(curQuery);
+  document.getElementById('scanResult').classList.add('on');
+  setTimeout(()=>document.getElementById('scanResult').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
-function handlePhotoSelected(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const img = document.getElementById('photoPreviewImg');
-  const placeholder = document.getElementById('photoPlaceholder');
-  img.src = URL.createObjectURL(file);
-  img.style.display = 'block';
-  placeholder.style.display = 'none';
-  // Try to extract text and search — for now prompt user to enter name
-  document.getElementById('photoProductName').focus();
+function showNotFound(q){
+  document.getElementById('rpName').textContent=q;
+  document.getElementById('rpBrand').textContent='';
+  document.getElementById('audienceRow').innerHTML='';
+  document.getElementById('rpHalal').innerHTML=`<span style="font-size:0.75rem;color:var(--text2)">${t('notFound')}</span>`;
+  ['rpOrigin','rpIng'].forEach(id=>document.getElementById(id).textContent='—');
+  ['rpAllergens','rpWarn'].forEach(id=>document.getElementById(id).innerHTML='—');
+  setAI(q);
+  document.getElementById('scanResult').classList.add('on');
 }
 
-function displayProduct(product) {
-  const name = product.product_name || product.product_name_en || 'Unknown Product';
-  const brand = product.brands || '';
-  currentProductQuery = name + (brand ? ' ' + brand : '');
-
-  document.getElementById('resultProductName').textContent = name;
-  document.getElementById('resultBrand').textContent = brand ? '🏷️ ' + brand : '';
-
-  // HALAL STATUS
-  const labels = (product.labels || '').toLowerCase();
-  const labelsArr = product.labels_tags || [];
-  const halalEl = document.getElementById('resultHalal');
-  if (labelsArr.some(l => l.includes('halal'))) {
-    const certifier = product.labels || '';
-    halalEl.innerHTML = `<span class="badge badge-green">${t('halal-yes')}</span>`;
-    if (certifier) halalEl.innerHTML += `<br><span style="font-size:13px;color:var(--text2)">📜 ${certifier}</span>`;
-  } else if (labelsArr.some(l => l.includes('non-halal') || l.includes('pork') || l.includes('alcohol'))) {
-    halalEl.innerHTML = `<span class="badge badge-red">${t('halal-no')}</span>`;
-  } else {
-    halalEl.innerHTML = `<span class="badge badge-grey">${t('halal-unknown')}</span>`;
-  }
-
-  // COUNTRY OF ORIGIN
-  const originEl = document.getElementById('resultOrigin');
-  const countries = product.countries || product.manufacturing_places || '';
-  originEl.textContent = countries || t('origin-unknown');
-
-  // INGREDIENTS
-  const ingEl = document.getElementById('resultIngredients');
-  const ing = product.ingredients_text || product.ingredients_text_en || '';
-  ingEl.textContent = ing || t('ingredients-none');
-
-  // ALLERGENS
-  const allergenEl = document.getElementById('resultAllergens');
-  const allergens = product.allergens_tags || [];
-  if (allergens.length > 0) {
-    allergenEl.innerHTML = allergens.map(a => {
-      const name = a.replace(/^en:/,'').replace(/-/g,' ');
-      return `<span class="badge badge-red">⚠️ ${name}</span>`;
-    }).join('');
-  } else {
-    allergenEl.innerHTML = `<span class="badge badge-green">${t('allergen-none')}</span>`;
-  }
-
-  // WARNINGS
-  const warnEl = document.getElementById('resultWarnings');
-  const warnings = [];
-  const additives = product.additives_tags || [];
-  const highSugar = product.nutriments && product.nutriments['sugars_100g'] > 20;
-  const highSalt = product.nutriments && product.nutriments['sodium_100g'] > 0.6;
-  const highSat = product.nutriments && product.nutriments['saturated-fat_100g'] > 5;
-  const novaGroup = product.nova_group;
-
-  if (allergens.some(a => a.includes('gluten'))) warnings.push({ type:'red', text: lang==='my'?'⚠️ Mengandungi Gluten':'⚠️ Contains Gluten' });
-  if (allergens.some(a => a.includes('milk') || a.includes('lactose'))) warnings.push({ type:'yellow', text: lang==='my'?'🥛 Mengandungi Laktosa':'🥛 Contains Lactose' });
-  if (allergens.some(a => a.includes('peanut') || a.includes('nut'))) warnings.push({ type:'red', text: lang==='my'?'🥜 Mengandungi Kacang (Alergen)':'🥜 Contains Nuts (Allergen)' });
-  if (highSugar) warnings.push({ type:'yellow', text: lang==='my'?'🍬 Kandungan Gula Tinggi':'🍬 High Sugar Content' });
-  if (highSalt) warnings.push({ type:'yellow', text: lang==='my'?'🧂 Kandungan Natrium Tinggi':'🧂 High Sodium Content' });
-  if (highSat) warnings.push({ type:'yellow', text: lang==='my'?'🧈 Lemak Tepu Tinggi':'🧈 High Saturated Fat' });
-  if (novaGroup === 4) warnings.push({ type:'red', text: lang==='my'?'🏭 Makanan Ultra-Diproses (NOVA 4)':'🏭 Ultra-Processed Food (NOVA 4)' });
-  if (additives.length > 5) warnings.push({ type:'yellow', text: lang==='my'?`🧪 ${additives.length} bahan tambah dikesan`:`🧪 ${additives.length} additives detected` });
-
-  if (warnings.length > 0) {
-    warnEl.innerHTML = warnings.map(w => `<span class="badge badge-${w.type === 'red' ? 'red' : 'yellow'}">${w.text}</span>`).join('');
-  } else {
-    warnEl.innerHTML = `<span class="badge badge-green">✅ ${t('warning-none')}</span>`;
-  }
-
-  setAILinks(currentProductQuery);
-  document.getElementById('scan-result').classList.add('visible');
+function setAI(q){
+  const locStr=userLocation?` in ${userLocation}`:'';
+  const locStrEnc=userLocation?` in ${userLocation}`:'';
+  const prompt=t('aiPrompt').replace('[P]',q).replace('[LOC]',locStr);
+  const enc=encodeURIComponent(prompt);
+  const gq=encodeURIComponent(q+(userLocation?` halal ${userLocation} ingredients`:`halal ingredients`));
+  document.getElementById('aiGoogle').href=`https://www.google.com/search?q=${gq}`;
+  document.getElementById('aiGPT').href=`https://chatgpt.com/?q=${enc}`;
+  document.getElementById('aiCopilot').href=`https://copilot.microsoft.com/?q=${enc}`;
+  document.getElementById('aiGemini').href=`https://gemini.google.com/app?q=${enc}`;
+  document.getElementById('aiClaude').href=`https://claude.ai/new?q=${enc}`;
 }
 
-function showNotFound(query) {
-  document.getElementById('resultProductName').textContent = query;
-  document.getElementById('resultBrand').textContent = '';
-  document.getElementById('resultHalal').innerHTML = `<span style="color:var(--text2);font-size:13px;">${t('not-found')}</span>`;
-  document.getElementById('resultOrigin').textContent = '—';
-  document.getElementById('resultIngredients').textContent = '—';
-  document.getElementById('resultAllergens').innerHTML = '—';
-  document.getElementById('resultWarnings').innerHTML = '—';
-  setAILinks(query);
-  document.getElementById('scan-result').classList.add('visible');
+function showLoad(){clearScanResult();document.getElementById('scanLoader').classList.add('on');document.getElementById('scanEmpty').style.display='none';}
+function hideLoad(){document.getElementById('scanLoader').classList.remove('on');}
+function clearScanResult(){document.getElementById('scanResult').classList.remove('on');}
+function resetScan(){
+  clearScanResult();hideLoad();
+  document.getElementById('scanEmpty').style.display='block';
+  document.getElementById('manBC').value='';document.getElementById('phName').value='';
+  document.getElementById('phPreview').style.display='none';
+  document.getElementById('phHolder').style.display='flex';
+  scanMode=null;
+  ['so-barcode','so-photo'].forEach(id=>document.getElementById(id).classList.remove('sel'));
+  document.getElementById('camArea').classList.remove('on');
+  document.getElementById('photoArea').classList.remove('on');
 }
 
-function setAILinks(query) {
-  const prompt = t('ai-prompt').replace('[PRODUCT]', query);
-  const enc = encodeURIComponent(prompt);
-  document.getElementById('ai-google').href = `https://www.google.com/search?q=${encodeURIComponent(query + ' halal ingredients origin')}`;
-  document.getElementById('ai-chatgpt').href = `https://chatgpt.com/?q=${enc}`;
-  document.getElementById('ai-copilot').href = `https://copilot.microsoft.com/?q=${enc}`;
-  document.getElementById('ai-gemini').href = `https://gemini.google.com/app?q=${enc}`;
-  document.getElementById('ai-claude').href = `https://claude.ai/new?q=${enc}`;
+// ════════════════════════════════════════
+//  SURVEY (IndexedDB)
+// ════════════════════════════════════════
+let svDB=null,svBlob=null;
+function initSvDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('JimatSurvey',1);
+    req.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains('photos'))db.createObjectStore('photos',{keyPath:'id',autoIncrement:true});};
+    req.onsuccess=e=>{svDB=e.target.result;res();};
+    req.onerror=()=>rej();
+  });
 }
 
-function showLoader() {
-  resetScanResult();
-  document.getElementById('scanLoader').classList.add('visible');
-  document.getElementById('scanEmpty').style.display = 'none';
+function onSvPhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const MAX=600;const scale=Math.min(1,MAX/Math.max(img.width,img.height));
+      canvas.width=img.width*scale;canvas.height=img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      canvas.toBlob(blob=>{
+        svBlob=blob;
+        const prev=document.getElementById('svPreview');
+        prev.src=URL.createObjectURL(blob);prev.style.display='block';
+        document.getElementById('svPlaceholder').style.display='none';
+      },'image/jpeg',0.7);
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(f);
 }
-function hideLoader() { document.getElementById('scanLoader').classList.remove('visible'); }
-function resetScanResult() { document.getElementById('scan-result').classList.remove('visible'); }
 
-function resetScan() {
-  resetScanResult();
-  document.getElementById('scanLoader').classList.remove('visible');
-  document.getElementById('scanEmpty').style.display = 'block';
-  document.getElementById('manualBarcode').value = '';
-  document.getElementById('photoProductName').value = '';
-  document.getElementById('photoPreviewImg').style.display = 'none';
-  document.getElementById('photoPlaceholder').style.display = 'flex';
-  scanMethod = null;
-  document.getElementById('btn-barcode-method').classList.remove('selected');
-  document.getElementById('btn-photo-method').classList.remove('selected');
-  document.getElementById('camera-area').classList.remove('visible');
-  document.getElementById('photo-area').classList.remove('visible');
+function saveSurvey(){
+  if(!svBlob){alert(lang==='my'?'Sila ambil foto dahulu!':'Please take a photo first!');return;}
+  const store=document.getElementById('svStore').value.trim();
+  const note=document.getElementById('svNote').value.trim();
+  const btn=document.getElementById('t-svSave');
+  btn.textContent=lang==='my'?'⏳ Menyimpan...':'⏳ Saving...';btn.disabled=true;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const rec={store:store||'—',note:note||'—',date:new Date().toLocaleString(),imgData:ev.target.result};
+    const tx=svDB.transaction('photos','readwrite');
+    tx.objectStore('photos').add(rec);
+    tx.oncomplete=()=>{
+      btn.innerHTML=t('svSave');btn.disabled=false;
+      svBlob=null;
+      document.getElementById('svPreview').style.display='none';
+      document.getElementById('svPlaceholder').style.display='flex';
+      document.getElementById('svStore').value='';
+      document.getElementById('svNote').value='';
+      document.getElementById('svFile').value='';
+      renderSurveyGallery();
+      // scroll to gallery
+      setTimeout(()=>document.getElementById('sgGrid').scrollIntoView({behavior:'smooth',block:'start'}),150);
+    };
+    tx.onerror=()=>{btn.innerHTML=t('svSave');btn.disabled=false;};
+  };
+  reader.readAsDataURL(svBlob);
 }
 
-// ============ INIT ============
-// Add 2 default stores
-addStore(); addStore();
-renderList();
-renderHistory();
+function renderSurveyGallery(){
+  if(!svDB)return;
+  const tx=svDB.transaction('photos','readonly');
+  const req=tx.objectStore('photos').getAll();
+  req.onsuccess=e=>{
+    const photos=e.target.result.reverse();
+    const grid=document.getElementById('sgGrid');grid.innerHTML='';
+    document.getElementById('sgEmpty').style.display=photos.length?'none':'block';
+    photos.forEach(p=>{
+      const d=document.createElement('div');d.className='sg-item';
+      d.innerHTML=`<img class="sg-img" src="${p.imgData}" alt="">
+        <div class="sg-body">
+          <div class="sg-store">${p.store}</div>
+          <div class="sg-note">${p.note}</div>
+          <div class="sg-date">📅 ${p.date}</div>
+          <div class="sg-actions">
+            <button class="sg-btn" onclick="shareSurveyItem(${p.id})">${t('svShareBtn')}</button>
+            <button class="sg-btn del" onclick="deleteSurveyItem(${p.id})">${t('svDeleteBtn')}</button>
+          </div>
+        </div>`;
+      grid.appendChild(d);
+    });
+  };
+}
+
+function deleteSurveyItem(id){
+  const tx=svDB.transaction('photos','readwrite');
+  tx.objectStore('photos').delete(id);
+  tx.oncomplete=()=>renderSurveyGallery();
+}
+function shareSurveyItem(id){
+  const tx=svDB.transaction('photos','readonly');
+  const req=tx.objectStore('photos').get(id);
+  req.onsuccess=e=>{
+    const p=e.target.result;if(!p)return;
+    const msg=`📷 *${lang==='my'?'Survei Harga':'Price Survey'}*\n🏪 ${p.store}\n📝 ${p.note}\n📅 ${p.date}\n\n_via Jimat App_`;
+    window.open('https://wa.me/?text='+encodeURIComponent(msg));
+  };
+}
+function clearSurvey(){
+  if(!confirm(lang==='my'?'Padam semua foto survei?':'Delete all survey photos?'))return;
+  const tx=svDB.transaction('photos','readwrite');
+  tx.objectStore('photos').clear();
+  tx.oncomplete=()=>renderSurveyGallery();
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+addItem();addItem();
+renderLI();renderHist();
+initSvDB().then(()=>renderSurveyGallery());
 applyLang();
+// init currency to second option = USD for currTo
+document.getElementById('currTo').value='USD';
 </script>
 </body>
 </html>
