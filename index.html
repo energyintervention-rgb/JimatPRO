@@ -1774,7 +1774,9 @@
 
   function searchUnknown(text) {
     const query = encodeURIComponent(text + ' halal haram ingredients e-code');
-    window.open('https://www.google.com/search?q=' + query, '_blank');
+    const url = 'https://www.google.com/search?q=' + query;
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) { showSearchLink(url, text); }
   }
 
   async function toggleInfoCamera() {
@@ -2017,9 +2019,33 @@
 
   function searchProduct(suffix) {
     const product = document.getElementById('search-product-input').value.trim();
-    if (!product) { alert('Please enter a product name first'); return; }
+    if (!product) {
+      document.getElementById('search-product-input').focus();
+      document.getElementById('search-product-input').placeholder = lang === 'my' ? 'Sila masukkan nama produk dulu...' : 'Please enter a product name first...';
+      return;
+    }
     const query = encodeURIComponent(product + ' ' + suffix);
-    window.open('https://www.google.com/search?q=' + query, '_blank');
+    const url = 'https://www.google.com/search?q=' + query;
+    // Always open in new tab - user can return to Jimat via back button or tab switch
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      // Popup blocked - create a visible link instead
+      showSearchLink(url, product + ' — ' + suffix);
+    }
+  }
+
+  function showSearchLink(url, label) {
+    const resultEl = document.getElementById('halal-result');
+    if (!resultEl) return;
+    resultEl.style.display = 'block';
+    resultEl.className = 'halal-result halal-check';
+    resultEl.innerHTML =
+      '<div class="halal-title" style="font-size:0.8rem;">' + (lang==='my'?'Pautan Carian:':'Search Link:') + '</div>' +
+      '<a href="' + url + '" target="_blank" rel="noopener noreferrer" ' +
+      'style="display:block;margin-top:8px;padding:10px;background:#4285F4;color:#fff;border-radius:8px;text-align:center;font-size:0.72rem;font-weight:bold;text-decoration:none;">' +
+      '🔍 ' + label + '</a>' +
+      '<div style="font-size:0.6rem;color:var(--text3);margin-top:6px;text-align:center;">' +
+      (lang==='my'?'Ketik pautan di atas untuk membuka Google':'Tap the link above to open Google') + '</div>';
   }
 
 </script>
