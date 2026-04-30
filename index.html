@@ -1775,8 +1775,7 @@
   function searchUnknown(text) {
     const query = encodeURIComponent(text + ' halal haram ingredients e-code');
     const url = 'https://www.google.com/search?q=' + query;
-    const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win) { showSearchLink(url, text); }
+    openExternalUrl(url, text + ' — halal check');
   }
 
   async function toggleInfoCamera() {
@@ -2017,6 +2016,11 @@
     window.scrollTo(0, 0);
   }
 
+  function isStandalonePWA() {
+    return window.navigator.standalone === true ||
+           window.matchMedia('(display-mode: standalone)').matches;
+  }
+
   function searchProduct(suffix) {
     const product = document.getElementById('search-product-input').value.trim();
     if (!product) {
@@ -2026,26 +2030,50 @@
     }
     const query = encodeURIComponent(product + ' ' + suffix);
     const url = 'https://www.google.com/search?q=' + query;
-    // Always open in new tab - user can return to Jimat via back button or tab switch
-    const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win) {
-      // Popup blocked - create a visible link instead
-      showSearchLink(url, product + ' — ' + suffix);
+    openExternalUrl(url, product + ' — ' + suffix);
+  }
+
+  function openExternalUrl(url, label) {
+    if (isStandalonePWA()) {
+      // In PWA mode — show in-app link overlay to avoid blank tab problem
+      showSearchLink(url, label);
+    } else {
+      // In browser — safe to open new tab
+      const win = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!win) showSearchLink(url, label);
     }
   }
 
   function showSearchLink(url, label) {
-    const resultEl = document.getElementById('halal-result');
-    if (!resultEl) return;
-    resultEl.style.display = 'block';
-    resultEl.className = 'halal-result halal-check';
-    resultEl.innerHTML =
-      '<div class="halal-title" style="font-size:0.8rem;">' + (lang==='my'?'Pautan Carian:':'Search Link:') + '</div>' +
+    // Show a tappable link overlay inside the app
+    // Remove any existing overlay
+    const existing = document.getElementById('search-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'search-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,31,23,0.97);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;';
+
+    overlay.innerHTML =
+      '<div style="font-size:0.6rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px;">' +
+        (lang==='my'?'Carian Google':'Google Search') +
+      '</div>' +
+      '<div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:700;color:var(--gold);text-align:center;margin-bottom:24px;">' +
+        label +
+      '</div>' +
       '<a href="' + url + '" target="_blank" rel="noopener noreferrer" ' +
-      'style="display:block;margin-top:8px;padding:10px;background:#4285F4;color:#fff;border-radius:8px;text-align:center;font-size:0.72rem;font-weight:bold;text-decoration:none;">' +
-      '🔍 ' + label + '</a>' +
-      '<div style="font-size:0.6rem;color:var(--text3);margin-top:6px;text-align:center;">' +
-      (lang==='my'?'Ketik pautan di atas untuk membuka Google':'Tap the link above to open Google') + '</div>';
+        'style="display:block;width:100%;max-width:320px;padding:14px;background:#4285F4;color:#fff;border-radius:12px;text-align:center;font-size:0.8rem;font-weight:bold;text-decoration:none;margin-bottom:12px;">' +
+        '🔍 ' + (lang==='my'?'Buka Google':'Open Google') +
+      '</a>' +
+      '<div style="font-size:0.62rem;color:var(--text3);margin-bottom:20px;text-align:center;">' +
+        (lang==='my'?'Tekan Buka Google, kemudian tekan Jimat untuk kembali':'Tap Open Google, then tap Jimat to return') +
+      '</div>' +
+      '<button onclick="document.getElementById(\'search-overlay\').remove()" ' +
+        'style="padding:10px 28px;border-radius:10px;border:1.5px solid var(--border2);background:none;color:var(--text2);font-family:DM Mono,monospace;font-size:0.72rem;cursor:pointer;">' +
+        '← ' + (lang==='my'?'Kembali ke Jimat':'Back to Jimat') +
+      '</button>';
+
+    document.body.appendChild(overlay);
   }
 
 </script>
