@@ -1570,9 +1570,14 @@
       let html = '<div class="halal-title">\u26A0\uFE0F ' + warnTitle + '</div>';
       found.forEach(function(item) {
         const authInfo = AUTHORITY_NOTES[item.code.toUpperCase()] || null;
+        const catLabel = item.cat === 'C' ? (lang==='my'?'Kosmetik':'Cosmetics') : item.cat === 'P' ? (lang==='my'?'Farmaseutikal':'Pharmaceuticals') : (lang==='my'?'Makanan/Minuman':'Food/Drink');
+        const catColor = item.cat === 'C' ? '#4A4AA0' : item.cat === 'P' ? '#7A3DAA' : '#1E4D2B';
         html += '<div class="halal-item">' +
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">' +
           '<strong style="color:var(--red);">' + item.code.toUpperCase() + ' — ' + item.name + '</strong>' +
-          '<br><span style="font-size:0.68rem;color:var(--text2);">' + item.reason + '</span>' +
+          '<span style="font-size:0.55rem;padding:1px 7px;border-radius:20px;background:' + catColor + ';color:#fff;flex-shrink:0;">' + catLabel + '</span>' +
+          '</div>' +
+          '<span style="font-size:0.68rem;color:var(--text2);">' + item.reason + '</span>' +
           (authInfo ? '<br><span style="font-size:0.6rem;color:var(--text3);background:rgba(231,76,60,0.12);padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px;">' + authInfo.status + ': ' + authInfo.src + '</span>' : '') +
           '</div>';
       });
@@ -1580,9 +1585,14 @@
         html += '<div style="margin-top:8px;font-size:0.65rem;color:var(--orange);padding-top:6px;border-top:1px solid var(--border);">' + (lang==='my'?'Perlu disemak:':'Also verify:') + '</div>';
         warnings.forEach(function(item) {
           const warnAuth = AUTHORITY_NOTES[item.code.toUpperCase()] || null;
+        const wCatLabel = item.cat === 'C' ? (lang==='my'?'Kosmetik':'Cosmetics') : item.cat === 'P' ? (lang==='my'?'Farmaseutikal':'Pharmaceuticals') : (lang==='my'?'Makanan/Minuman':'Food/Drink');
+        const wCatColor = item.cat === 'C' ? '#4A4AA0' : item.cat === 'P' ? '#7A3DAA' : '#2D5A00';
         html += '<div class="halal-item" style="color:var(--orange);">' +
-          item.code.toUpperCase() + ' — ' + item.name +
-          '<br><em style="font-size:0.62rem;color:var(--text2);">' + item.note + '</em>' +
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">' +
+          '<strong>' + item.code.toUpperCase() + ' — ' + item.name + '</strong>' +
+          '<span style="font-size:0.55rem;padding:1px 7px;border-radius:20px;background:' + wCatColor + ';color:#fff;flex-shrink:0;">' + wCatLabel + '</span>' +
+          '</div>' +
+          '<em style="font-size:0.62rem;color:var(--text2);">' + item.note + '</em>' +
           (warnAuth ? '<br><span style="font-size:0.6rem;color:var(--text3);background:rgba(230,126,34,0.12);padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px;">' + warnAuth.status + ': ' + warnAuth.src + '</span>' : '') +
           '</div>';
         });
@@ -1594,9 +1604,14 @@
       let html = '<div class="halal-title">\u26A0\uFE0F ' + mushTitle + '</div>';
       warnings.forEach(function(item) {
         const warnAuth = AUTHORITY_NOTES[item.code.toUpperCase()] || null;
+        const wCatLabel = item.cat === 'C' ? (lang==='my'?'Kosmetik':'Cosmetics') : item.cat === 'P' ? (lang==='my'?'Farmaseutikal':'Pharmaceuticals') : (lang==='my'?'Makanan/Minuman':'Food/Drink');
+        const wCatColor = item.cat === 'C' ? '#4A4AA0' : item.cat === 'P' ? '#7A3DAA' : '#2D5A00';
         html += '<div class="halal-item" style="color:var(--orange);">' +
-          item.code.toUpperCase() + ' — ' + item.name +
-          '<br><em style="font-size:0.62rem;color:var(--text2);">' + item.note + '</em>' +
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">' +
+          '<strong>' + item.code.toUpperCase() + ' — ' + item.name + '</strong>' +
+          '<span style="font-size:0.55rem;padding:1px 7px;border-radius:20px;background:' + wCatColor + ';color:#fff;flex-shrink:0;">' + wCatLabel + '</span>' +
+          '</div>' +
+          '<em style="font-size:0.62rem;color:var(--text2);">' + item.note + '</em>' +
           (warnAuth ? '<br><span style="font-size:0.6rem;color:var(--text3);background:rgba(230,126,34,0.12);padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px;">' + warnAuth.status + ': ' + warnAuth.src + '</span>' : '') +
           '</div>';
       });
