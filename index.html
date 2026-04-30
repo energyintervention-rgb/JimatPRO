@@ -7,11 +7,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="msapplication-TileColor" content="#0d1f17">
+  <meta name="msapplication-TileImage" content="icon-192.png">
   <meta name="apple-mobile-web-app-title" content="Jimat">
   <meta name="application-name" content="Jimat">
-  <meta name="theme-color" content="#f5f0e8">
+  <meta name="theme-color" content="#d4a843">
   <link rel="apple-touch-icon" href="icon.png">
-  <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Price+Compare+Pro%22%2C%22short_name%22%3A%22PriceCompare%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f5f0e8%22%2C%22theme_color%22%3A%22%23333333%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%25270%25200%2520192%2520192%2527%253E%253Crect%2520width%3D%2527192%2527%2520height%3D%2527192%2527%2520rx%3D%252740%2527%2520fill%3D%2527%2523333%2527%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,6 +123,15 @@
     .list-add-row button { width: auto; padding: 7px 16px; margin-bottom: 0; }
 
     body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+    .share-card { background: var(--bg2); border: 1.5px solid var(--border2); border-radius: 14px; padding: 16px; margin-top: 10px; display: none; }
+    .share-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .share-card-logo { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--gold); }
+    .share-card-subtitle { font-size: 0.6rem; color: var(--text3); }
+    .share-card-result { margin-bottom: 10px; }
+    .share-card-footer { font-size: 0.58rem; color: var(--text3); text-align: center; padding-top: 8px; border-top: 1px solid var(--border); }
+    .share-result-btn { width: 100%; padding: 11px; border-radius: 10px; background: #25D366; color: #fff; border: none; font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-top: 8px; display: none; }
+    .share-result-btn:hover { background: #1ea855; }
+    .share-result-btn.loading { background: var(--bg3); color: var(--text3); }
     .survey-capture-box { background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
     /* SURVEY SCANNER - 320x200px */
     .scanner-wrap { display: none; position: relative; width: 100%; max-width: 320px; margin: 8px auto; border-radius: 10px; overflow: hidden; background: #000; }
@@ -314,6 +326,33 @@
       <div class="info-section-title" id="info-title-type">✍️ Type or Paste Ingredients</div>
 
       <div id="halal-result" class="halal-result" style="margin-bottom:8px;"></div>
+
+      <!-- SHAREABLE CARD -->
+      <div class="share-card" id="share-card">
+        <div class="share-card-header">
+          <div>
+            <div class="share-card-logo">Jimat 🛒</div>
+            <div class="share-card-subtitle" id="sc-subtitle">Halal Check Result</div>
+          </div>
+          <div style="margin-left:auto;font-size:1.5rem;" id="sc-status-icon">⚠️</div>
+        </div>
+        <!-- Product photo in card -->
+        <img id="sc-product-photo" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-bottom:10px;display:none;">
+        <div class="share-card-result" id="sc-result-content"></div>
+        <div class="share-card-footer" id="sc-footer">energyintervention-rgb.github.io/JimatPRO • Jimat · Beli Bijak Jimat Lebih</div>
+      </div>
+      <!-- Add photo button -->
+      <input type="file" accept="image/*" capture="environment" id="sc-photo-input" style="display:none;" onchange="attachProductPhoto(event)">
+      <div style="display:flex;gap:8px;margin-top:8px;" id="share-action-row" style="display:none;">
+        <button onclick="document.getElementById('sc-photo-input').click()" id="sc-add-photo-btn"
+          style="flex:0 0 auto;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border2);background:none;color:var(--text2);font-family:'DM Mono',monospace;font-size:0.7rem;cursor:pointer;white-space:nowrap;">
+          📷 Add Photo
+        </button>
+        <button class="share-result-btn" id="share-result-btn" onclick="shareHalalResult()"
+          style="flex:1;margin-top:0;">
+          📤 Share via WhatsApp
+        </button>
+      </div>
 
       <textarea class="ingredient-input" id="ingredient-input" placeholder="e.g. E471, E120, Gelatin..." onblur="if(this.value.trim()) checkIngredients();" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();checkIngredients();}"></textarea>
       <div style="font-size:0.58rem;color:var(--text3);margin-top:3px;" id="info-input-hint">Press Enter or tap away to check</div>
@@ -1562,6 +1601,175 @@
         '<div class="halal-title">\u2705 ' + okTitle + '</div>' +
         '<div style="font-size:0.68rem;color:var(--text2);margin-top:4px;">' + okSub + '</div>';
     }
+
+    // Populate share card
+    updateShareCard(found, warnings, unknownText);
+  }
+
+  function updateShareCard(found, warnings, unknownText) {
+    const card = document.getElementById('share-card');
+    const btn = document.getElementById('share-result-btn');
+    const scResult = document.getElementById('sc-result-content');
+    const scIcon = document.getElementById('sc-status-icon');
+    const scSubtitle = document.getElementById('sc-subtitle');
+
+    if (!card) return;
+
+    // Don't show share card for "not found" — only for actual results
+    if (unknownText) {
+      card.style.display = 'none';
+      btn.style.display = 'none';
+      return;
+    }
+
+    // Build share card content
+    let cardHtml = '';
+    let icon = '\u2705';
+    let subtitle = lang === 'my' ? 'Tiada Bahan Haram Dikesan' : 'No Haram Ingredients Found';
+
+    if (found.length > 0) {
+      icon = '\uD83D\uDEA8';
+      subtitle = lang === 'my' ? 'Tidak Sesuai untuk Muslim' : 'Not Suitable for Muslim';
+      found.forEach(function(item) {
+        const authInfo = AUTHORITY_NOTES[item.code.toUpperCase()] || null;
+        cardHtml += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+          '<div style="font-size:0.75rem;font-weight:bold;color:#e74c3c;">' + item.code.toUpperCase() + ' — ' + item.name + '</div>' +
+          '<div style="font-size:0.65rem;color:#a8c8b4;margin-top:2px;">' + item.reason + '</div>' +
+          (authInfo ? '<div style="font-size:0.6rem;color:#6a9a7a;margin-top:2px;">' + authInfo.status + ': ' + authInfo.src + '</div>' : '') +
+          '</div>';
+      });
+    }
+
+    if (warnings.length > 0) {
+      if (found.length === 0) {
+        icon = '\u26A0\uFE0F';
+        subtitle = lang === 'my' ? 'Mushbooh — Perlu Disemak' : 'Mushbooh — Needs Verification';
+      }
+      warnings.forEach(function(item) {
+        const authInfo = AUTHORITY_NOTES[item.code.toUpperCase()] || null;
+        cardHtml += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+          '<div style="font-size:0.75rem;font-weight:bold;color:#e67e22;">' + item.code.toUpperCase() + ' — ' + item.name + '</div>' +
+          '<div style="font-size:0.65rem;color:#a8c8b4;margin-top:2px;">' + item.note + '</div>' +
+          (authInfo ? '<div style="font-size:0.6rem;color:#6a9a7a;margin-top:2px;">' + authInfo.status + ': ' + authInfo.src + '</div>' : '') +
+          '</div>';
+      });
+    }
+
+    if (found.length === 0 && warnings.length === 0) {
+      cardHtml = '<div style="font-size:0.72rem;color:#a8c8b4;">' +
+        (lang === 'my' ? 'Tiada E-Kod haram dikesan dalam bahan ini.' : 'No haram E-Codes detected in these ingredients.') +
+        '</div>';
+    }
+
+    scResult.innerHTML = cardHtml;
+    scIcon.textContent = icon;
+    scSubtitle.textContent = subtitle;
+
+    // Update footer with date
+    const dateStr = new Date().toLocaleString('en-MY', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('sc-footer').textContent = dateStr + ' • energyintervention-rgb.github.io/JimatPRO';
+
+    // Show card and share buttons
+    card.style.display = 'block';
+    const actionRow = document.getElementById('share-action-row');
+    if (actionRow) actionRow.style.display = 'flex';
+    btn.style.display = 'block';
+    btn.textContent = lang === 'my' ? '\uD83D\uDCE4 Kongsi via WhatsApp' : '\uD83D\uDCE4 Share via WhatsApp';
+
+    // Update add photo button text
+    const addPhotoBtn = document.getElementById('sc-add-photo-btn');
+    if (addPhotoBtn) addPhotoBtn.textContent = lang === 'my' ? '\uD83D\uDCF7 Tambah Foto' : '\uD83D\uDCF7 Add Photo';
+  }
+
+  async function shareHalalResult() {
+    const btn = document.getElementById('share-result-btn');
+    const card = document.getElementById('share-card');
+    if (!card || card.style.display === 'none') return;
+
+    btn.textContent = '⏳ Preparing...';
+    btn.classList.add('loading');
+
+    try {
+      // Capture share card as image using html2canvas
+      const canvas = await html2canvas(card, {
+        backgroundColor: '#132a1e',
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      canvas.toBlob(async function(blob) {
+        const file = new File([blob], 'jimat-halal-check.png', { type: 'image/png' });
+
+        // Build share text
+        const resultEl = document.getElementById('halal-result');
+        const title = resultEl ? resultEl.querySelector('.halal-title') : null;
+        const titleText = title ? title.textContent : 'Jimat Halal Check';
+        const items = resultEl ? resultEl.querySelectorAll('.halal-item') : [];
+        let itemsText = '';
+        items.forEach(function(item) {
+          const strong = item.querySelector('strong');
+          itemsText += '\n- ' + (strong ? strong.textContent : item.textContent.substring(0,60));
+        });
+
+        const shareText = titleText + itemsText + '\n\nJimat: ' + window.location.href;
+
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'Jimat Halal Check',
+            text: shareText,
+            files: [file]
+          });
+        } else {
+          // Fallback — download image + open WhatsApp text
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'jimat-halal-check.png';
+          a.click();
+          URL.revokeObjectURL(url);
+          setTimeout(function() {
+            window.open('https://wa.me/?text=' + encodeURIComponent(shareText), '_blank');
+          }, 800);
+        }
+
+        btn.textContent = lang === 'my' ? '📤 Kongsi via WhatsApp' : '📤 Share via WhatsApp';
+        btn.classList.remove('loading');
+      }, 'image/png');
+
+    } catch(e) {
+      btn.textContent = lang === 'my' ? '📤 Kongsi via WhatsApp' : '📤 Share via WhatsApp';
+      btn.classList.remove('loading');
+      // Fallback text only
+      const text = (lang === 'my' ? 'Semakan Halal Jimat\n' : 'Jimat Halal Check\n') +
+        window.location.href;
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+  }
+
+  function attachProductPhoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      // Compress photo before showing in card
+      compressImage(e.target.result, 800, 0.75, function(compressed) {
+        const photoEl = document.getElementById('sc-product-photo');
+        if (photoEl) {
+          photoEl.src = compressed;
+          photoEl.style.display = 'block';
+        }
+        // Update add photo btn to show it's done
+        const btn = document.getElementById('sc-add-photo-btn');
+        if (btn) {
+          btn.textContent = lang === 'my' ? '\u2705 Foto Ditambah' : '\u2705 Photo Added';
+          btn.style.borderColor = 'var(--green2)';
+          btn.style.color = 'var(--green)';
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
   }
 
   function searchUnknown(text) {
@@ -1780,19 +1988,30 @@
   }
 
   function resetIngredients() {
-    // Reset ingredient input
     document.getElementById('ingredient-input').value = '';
-    // Reset halal result box
     const r = document.getElementById('halal-result');
     r.style.display = 'none';
     r.innerHTML = '';
-    // Reset e-code select
     const sel = document.getElementById('ecode-select');
     if (sel) sel.selectedIndex = 0;
-    // Reset search input
     const searchInp = document.getElementById('search-product-input');
     if (searchInp) searchInp.value = '';
-    // Scroll to top of info tab
+    // Hide share card and buttons
+    const card = document.getElementById('share-card');
+    if (card) card.style.display = 'none';
+    const btn = document.getElementById('share-result-btn');
+    if (btn) btn.style.display = 'none';
+    const actionRow = document.getElementById('share-action-row');
+    if (actionRow) actionRow.style.display = 'none';
+    // Reset product photo
+    const photoEl = document.getElementById('sc-product-photo');
+    if (photoEl) { photoEl.style.display = 'none'; photoEl.src = ''; }
+    const addPhotoBtn = document.getElementById('sc-add-photo-btn');
+    if (addPhotoBtn) {
+      addPhotoBtn.textContent = lang === 'my' ? '\uD83D\uDCF7 Tambah Foto' : '\uD83D\uDCF7 Add Photo';
+      addPhotoBtn.style.borderColor = '';
+      addPhotoBtn.style.color = '';
+    }
     window.scrollTo(0, 0);
   }
 
