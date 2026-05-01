@@ -1310,6 +1310,7 @@
   // ============ HALAL DATABASE — loaded from halal-db.json ============
   let HARAM_LIST = [];
   let WARN_LIST = [];
+  let SAFE_LIST = [];
   let AUTHORITY_NOTES = {};
   let DB_LOADED = false;
   let DB_VERSION = '1.0';
@@ -1385,6 +1386,11 @@
       db.warn.forEach(function(item) {
         const key = item.code.toUpperCase();
         AUTHORITY_NOTES[key] = { status: 'Mushbooh', src: item.src };
+      });
+
+      // Load safe list
+      SAFE_LIST = (db.safe || []).map(function(item) {
+        return { code: item.code, name: item.name };
       });
 
       DB_LOADED = true;
@@ -1470,7 +1476,18 @@
 
     // If nothing found in library, offer search engine automatically
     if (found.length === 0 && warnings.length === 0) {
-      displayHalalResult([], [], input.trim());
+      // Check if any term matches safe list
+      const safeFound = [];
+      SAFE_LIST.forEach(function(item) {
+        if (lower.includes(item.code.toLowerCase())) {
+          safeFound.push(item);
+        }
+      });
+      if (safeFound.length > 0) {
+        displayHalalResult([], [], null, safeFound);
+      } else {
+        displayHalalResult([], [], input.trim());
+      }
     } else {
       displayHalalResult(found, warnings, null);
     }
@@ -1480,10 +1497,28 @@
   // Authority sources — JAKIM = Malaysia, IFANCA = USA, HFA = UK, MUIS = Singapore, MUI = Indonesia
   // AUTHORITY_NOTES built dynamically from halal-db.json (see loadHalalDB)
 
-  function displayHalalResult(found, warnings, unknownText) {
+  function displayHalalResult(found, warnings, unknownText, safeFound) {
     const resultEl = document.getElementById('halal-result');
     if (!resultEl) return;
     resultEl.style.display = 'block';
+
+    // Show safe/halal result
+    if (safeFound && safeFound.length > 0 && found.length === 0 && warnings.length === 0) {
+      resultEl.className = 'halal-result halal-ok';
+      const safeTitle = lang === 'my' ? 'Halal — Selamat Digunakan' : 'Halal — Safe to Use';
+      const safeSub = lang === 'my' ? 'Sentiasa sahkan dengan pensijilan JAKIM/HALAL rasmi.' : 'Always verify with official JAKIM/HALAL certification.';
+      let safeHtml = '<div class="halal-title">\u2705 ' + safeTitle + '</div>';
+      safeFound.forEach(function(item) {
+        safeHtml += '<div class="halal-item" style="color:var(--green);">' +
+          '<strong>' + item.code.toUpperCase() + ' — ' + item.name + '</strong>' +
+          '<br><span style="font-size:0.62rem;color:var(--text2);">' + (lang==='my'?'Tiada bahaya dikesan dalam pangkalan data kami.':'No danger detected in our database.') + '</span>' +
+          '</div>';
+      });
+      safeHtml += '<div style="font-size:0.65rem;color:var(--text3);margin-top:6px;">' + safeSub + '</div>';
+      resultEl.innerHTML = safeHtml;
+      updateShareCard([], [], null);
+      return;
+    }
 
     if (unknownText) {
       // Not found in library — show result + offer search
