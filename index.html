@@ -1286,87 +1286,23 @@
 
 
   // ============ PROPER SERVICE WORKER ============
-  if ('serviceWorker' in navigator) {
-    const CACHE = 'jimat-v1';
-    const swCode = `
-      const CACHE_NAME = 'jimat-v1';
-      const ASSETS = [
-        self.location.pathname.replace('/sw.js','') + '/',
-        'https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono&display=swap'
-      ];
-
-      self.addEventListener('install', e => {
-        e.waitUntil(
-          caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(ASSETS).catch(() => {});
-          }).then(() => self.skipWaiting())
-        );
-      });
-
-      self.addEventListener('activate', e => {
-        e.waitUntil(
-          caches.keys().then(keys =>
-            Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-          ).then(() => clients.claim())
-        );
-      });
-
-      self.addEventListener('fetch', e => {
-        if (e.request.method !== 'GET') return;
-        const url = new URL(e.request.url);
-
-        // Network first for currency API
-        if (url.hostname === 'api.frankfurter.app') {
-          e.respondWith(
-            fetch(e.request)
-              .then(res => {
-                const clone = res.clone();
-                caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-                return res;
-              })
-              .catch(() => caches.match(e.request))
-          );
-          return;
-        }
-
-        // Cache first for everything else
-        e.respondWith(
-          caches.match(e.request).then(cached => {
-            if (cached) return cached;
-            return fetch(e.request).then(res => {
-              if (!res || res.status !== 200 || res.type === 'opaque') return res;
-              const clone = res.clone();
-              caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-              return res;
-            }).catch(() => caches.match('/'));
-          })
-        );
-      });
-    `;
-
-    // Only register SW when served from http/https (not blob/file)
-    const proto = window.location.protocol;
-    if (proto === 'http:' || proto === 'https:') {
-      const blob = new Blob([swCode], {type: 'application/javascript'});
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).then(reg => {
-        if (reg.installing) {
-          caches.open(CACHE).then(cache => {
-            cache.add(window.location.href);
-          });
-        }
-        console.log('Jimat SW registered — offline mode active');
-      }).catch(err => console.log('SW note:', err.message));
-    }
-
-    // Also cache all external fonts and resources on load
+  // Register proper service worker from sw.js file
+  if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
     window.addEventListener('load', function() {
-      caches.open(CACHE).then(function(cache) {
-        // Cache the page itself
-        cache.add(window.location.href).catch(() => {});
-        // Cache fonts
-        cache.add('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono&display=swap').catch(() => {});
-      });
+      navigator.serviceWorker.register('/JimatPRO/sw.js', { scope: '/JimatPRO/' })
+        .then(function(reg) {
+          console.log('Jimat SW registered, scope:', reg.scope);
+          // Cache main assets
+          if (reg.installing) {
+            caches.open('jimat-v2').then(function(cache) {
+              cache.add(window.location.href).catch(function(){});
+              cache.add('/JimatPRO/halal-db.json').catch(function(){});
+            });
+          }
+        })
+        .catch(function(err) {
+          console.log('SW registration failed:', err);
+        });
     });
   }
 
