@@ -334,7 +334,7 @@
         <div class="share-card-footer" id="sc-footer">energyintervention-rgb.github.io/JimatPRO</div>
       </div>
       <input type="file" accept="image/*" capture="environment" id="sc-photo-input" style="display:none;" onchange="attachProductPhoto(event)">
-      <div style="display:flex;gap:8px;margin-top:8px;" id="share-action-row">
+      <div style="display:none;gap:8px;margin-top:8px;" id="share-action-row">
         <button onclick="document.getElementById('sc-photo-input').click()" id="sc-add-photo-btn"
           style="flex:0 0 auto;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border2);background:none;color:var(--text2);font-family:'DM Mono',monospace;font-size:0.7rem;cursor:pointer;white-space:nowrap;">
           📷 Tambah Foto
@@ -618,11 +618,10 @@
     updateReadBtn(false);
     applyElderlyMode();
     renderItems();
-    const halalResult=document.getElementById('halal-result');
-    if(halalResult&&halalResult.innerHTML){const inp=document.getElementById('ingredient-input');if(inp&&inp.value.trim())checkIngredients(inp.value);}
+
   }
 
-  addItem();addItem();buildEcodePills();loadHalalDB();setLang('my');
+  addItem();addItem();buildEcodePills();loadHalalDB();setLang('my');switchTab('compare');
 
   window.addEventListener('load',function(){setTimeout(function(){const splash=document.getElementById('splash');if(splash){splash.style.opacity='0';setTimeout(function(){splash.style.display='none';},500);}},1800);});
 
