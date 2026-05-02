@@ -880,57 +880,139 @@
 
   async function handleOCRImage(event) {
     const file = event.target.files[0]; if (!file) return; event.target.value = '';
-    const btn = document.getElementById('ocr-btn');
     const status = document.getElementById('ocr-status');
+    const btn = document.getElementById('ocr-btn');
     if (btn) btn.disabled = true;
-    if (status) status.textContent = lang === 'my' ? '⏳ Membaca teks... sila tunggu...' : '⏳ Reading text... please wait...';
-    try {
-      const reader = new FileReader();
-      reader.onload = async function(e) {
+    if (status) status.textContent = lang === 'my' ? '⏳ Membaca teks...' : '⏳ Reading text...';
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      compressImage(e.target.result, 1200, 0.85, async function(compressed) {
         try {
-          compressImage(e.target.result, 1200, 0.85, async function(compressed) {
-            try {
-              const result = await Tesseract.recognize(compressed, 'eng+msa', {
-                logger: function(m) {
-                  if (m.status === 'recognizing text' && status) {
-                    status.textContent = (lang === 'my' ? '⏳ Membaca... ' : '⏳ Reading... ') + Math.round((m.progress || 0) * 100) + '%';
-                  }
-                }
-              });
-              // FIX: extract from ingredients keyword
-              const rawText = result.data.text;
-              if (status) status.textContent = lang === 'my' ? '✅ Teks dibaca! Mencari bahan...' : '✅ Text read! Finding ingredients...';
-              const lowerRaw = rawText.toLowerCase();
-              const kwList = ['ingredients', 'bahan-bahan', 'bahan', 'ramuan', 'kandungan'];
-              let kwIdx = -1;
-              for (const kw of kwList) { const ki = lowerRaw.indexOf(kw); if (ki !== -1) { kwIdx = ki; break; } }
-              const extractedText = kwIdx !== -1 ? rawText.substring(kwIdx).substring(0, 600) : rawText.trim().substring(0, 500);
-              const inp = document.getElementById('ingredient-input');
-              if (inp && extractedText.trim()) {
-                inp.value = extractedText.trim();
-                checkIngredients(inp.value);
-                if (status) status.textContent = lang === 'my' ? '✅ Bahan dijumpai!' : '✅ Ingredients found!';
-              } else {
-                if (status) status.textContent = lang === 'my' ? 'Teks tidak dijumpai. Cuba gambar lebih dekat.' : 'No text found. Try closer photo.';
+          // Run Tesseract to get words with bounding boxes
+          if (status) status.textContent = lang === 'my' ? '⏳ Menganalisis label...' : '⏳ Analysing label...';
+          const result = await Tesseract.recognize(compressed, 'eng+msa', {
+            logger: function(m) {
+              if (m.status === 'recognizing text' && status) {
+                status.textContent = (lang === 'my' ? '⏳ Membaca... ' : '⏳ Reading... ') + Math.round((m.progress||0)*100) + '%';
               }
-              if (btn) btn.disabled = false;
-              setTimeout(function() { if (status) status.textContent = ''; }, 4000);
-            } catch(ocrErr) {
-              if (status) status.textContent = lang === 'my' ? 'Ralat OCR. Cuba taip manual.' : 'OCR error. Try manually.';
-              if (btn) btn.disabled = false;
             }
           });
+
+          if (status) status.textContent = '';
+          if (btn) btn.disabled = false;
+
+          // Show interactive word-select overlay
+          showOCRSelector(compressed, result.data);
         } catch(e) {
-          if (status) status.textContent = lang === 'my' ? 'Ralat memproses gambar.' : 'Image error.';
+          if (status) status.textContent = lang === 'my' ? 'Ralat OCR.' : 'OCR error.';
           if (btn) btn.disabled = false;
         }
-      };
-      reader.readAsDataURL(file);
-    } catch(e) {
-      if (status) status.textContent = lang === 'my' ? 'Ralat. Cuba lagi.' : 'Error. Try again.';
-      if (btn) btn.disabled = false;
-    }
+      });
+    };
+    reader.readAsDataURL(file);
   }
+
+  function showOCRSelector(imageDataUrl, ocrData) {
+    // Remove existing overlay
+    const existing = document.getElementById('ocr-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'ocr-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;';
+
+    // Top bar
+    const topBar = document.createElement('div');
+    topBar.style.cssText = 'background:rgba(0,0,0,0.8);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;';
+    topBar.innerHTML = '<div style="font-family:Syne,sans-serif;font-size:0.8rem;color:#d4a843;font-weight:700;">' + (lang==='my'?'Ketik perkataan untuk pilih':'Tap words to select') + '</div>' +
+      '<button id="ocr-close-btn" style="padding:6px 12px;border-radius:8px;border:1.5px solid #3a7a52;background:none;color:#a8c8b4;font-family:DM Mono,monospace;font-size:0.7rem;cursor:pointer;">✕ ' + (lang==='my'?'Tutup':'Close') + '</button>';
+    overlay.appendChild(topBar);
+
+    // Image + word boxes container
+    const imgWrap = document.createElement('div');
+    imgWrap.style.cssText = 'position:relative;flex:1;overflow:auto;';
+
+    const img = document.createElement('img');
+    img.src = imageDataUrl;
+    img.style.cssText = 'width:100%;display:block;';
+    imgWrap.appendChild(img);
+
+    // Word boxes canvas overlay
+    const wordLayer = document.createElement('div');
+    wordLayer.style.cssText = 'position:absolute;inset:0;';
+    imgWrap.appendChild(wordLayer);
+    overlay.appendChild(imgWrap);
+
+    // Bottom bar - selected text + check button
+    const bottomBar = document.createElement('div');
+    bottomBar.style.cssText = 'background:rgba(13,31,23,0.95);padding:10px 14px;flex-shrink:0;border-top:1px solid #2d5a3f;';
+    bottomBar.innerHTML =
+      '<div style="font-size:0.6rem;color:#6a9a7a;letter-spacing:0.1em;margin-bottom:4px;" id="ocr-selected-label">' + (lang==='my'?'TEKS DIPILIH:':'SELECTED TEXT:') + '</div>' +
+      '<div id="ocr-selected-text" style="font-family:DM Mono,monospace;font-size:0.72rem;color:#e8f5ee;min-height:32px;background:#132a1e;border-radius:6px;padding:6px 8px;margin-bottom:8px;word-break:break-all;"></div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button id="ocr-clear-btn" style="flex-shrink:0;padding:9px 12px;border-radius:8px;border:1.5px solid #3a7a52;background:none;color:#a8c8b4;font-family:DM Mono,monospace;font-size:0.7rem;cursor:pointer;">' + (lang==='my'?'Kosong':'Clear') + '</button>' +
+        '<button id="ocr-check-btn" style="flex:1;padding:10px;border-radius:8px;background:#27ae60;color:#fff;border:none;font-family:DM Mono,monospace;font-size:0.78rem;font-weight:bold;cursor:pointer;">✅ ' + (lang==='my'?'Semak Halal':'Check Halal') + '</button>' +
+      '</div>';
+    overlay.appendChild(bottomBar);
+    document.body.appendChild(overlay);
+
+    // Draw word tap boxes after image loads
+    img.onload = function() {
+      const scaleX = img.clientWidth / ocrData.words[0]?.bbox?.x1 || 1;
+      const imgW = img.naturalWidth;
+      const imgH = img.naturalHeight;
+      const dispW = img.clientWidth;
+      const dispH = img.clientHeight;
+
+      let selectedWords = [];
+
+      (ocrData.words || []).forEach(function(word) {
+        if (!word.text.trim() || word.confidence < 30) return;
+        const box = document.createElement('div');
+        const x = (word.bbox.x0 / imgW) * dispW;
+        const y = (word.bbox.y0 / imgH) * dispH;
+        const w = ((word.bbox.x1 - word.bbox.x0) / imgW) * dispW;
+        const h = ((word.bbox.y1 - word.bbox.y0) / imgH) * dispH;
+        box.style.cssText = 'position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px;border:1.5px solid rgba(212,168,67,0.5);border-radius:3px;cursor:pointer;box-sizing:border-box;';
+        box.dataset.text = word.text;
+        box.onclick = function() {
+          const isSelected = box.dataset.selected === '1';
+          if (isSelected) {
+            box.dataset.selected = '0';
+            box.style.background = '';
+            box.style.borderColor = 'rgba(212,168,67,0.5)';
+            selectedWords = selectedWords.filter(function(w){ return w !== word.text; });
+          } else {
+            box.dataset.selected = '1';
+            box.style.background = 'rgba(212,168,67,0.35)';
+            box.style.borderColor = '#d4a843';
+            selectedWords.push(word.text);
+          }
+          document.getElementById('ocr-selected-text').textContent = selectedWords.join(', ');
+        };
+        wordLayer.appendChild(box);
+      });
+
+      // Wire up buttons
+      document.getElementById('ocr-close-btn').onclick = function() { overlay.remove(); };
+      document.getElementById('ocr-clear-btn').onclick = function() {
+        selectedWords = [];
+        document.getElementById('ocr-selected-text').textContent = '';
+        wordLayer.querySelectorAll('div').forEach(function(b){ b.dataset.selected='0'; b.style.background=''; b.style.borderColor='rgba(212,168,67,0.5)'; });
+      };
+      document.getElementById('ocr-check-btn').onclick = function() {
+        const text = selectedWords.join(', ');
+        if (!text) { document.getElementById('ocr-selected-text').textContent = lang==='my'?'Pilih perkataan dahulu.':'Select words first.'; return; }
+        const inp = document.getElementById('ingredient-input');
+        if (inp) inp.value = text;
+        overlay.remove();
+        switchTab('info');
+        checkIngredients(text);
+      };
+    };
+  }
+
 
   // ============================================================
   // BARCODE SCANNER — FIX: no hints for accurate EAN-13 reading
