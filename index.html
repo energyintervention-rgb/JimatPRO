@@ -1107,27 +1107,107 @@
 
   async function lookupBarcode(barcode) {
     const status = document.getElementById('ocr-status');
-    if (status) status.textContent = (lang==='my'?'Mencari: ':'Looking up: ') + barcode;
+    if (status) status.textContent = (lang==='my'?'Mencari produk: ':'Looking up: ') + barcode;
     switchTab('info');
-    try {
-      const resp = await fetch('https://world.openfoodfacts.org/api/v2/product/' + barcode + '.json?fields=product_name,product_name_ms,product_name_en,brands,ingredients_text,ingredients_text_ms,ingredients_text_en');
-      const data = await resp.json();
-      if (data.status === 1 && data.product) {
-        const prod = data.product;
-        const name = prod.product_name_ms || prod.product_name || prod.product_name_en || barcode;
-        const ingredients = prod.ingredients_text_ms || prod.ingredients_text || prod.ingredients_text_en || '';
-        const brand = prod.brands || '';
-        if (status) status.textContent = name + (brand ? ' - ' + brand : '');
-        const inp = document.getElementById('ingredient-input');
-        if (inp && ingredients.trim()) { inp.value = ingredients.substring(0, 500); checkIngredients(inp.value); }
-        else { if (inp) inp.value = name; showBarcodeNotFound(name + ' halal ingredients', lang==='my' ? 'Tiada bahan untuk ' + name : 'No ingredients for ' + name); }
-      } else {
-        showBarcodeNotFound(barcode + ' halal ingredients', lang==='my' ? 'Barcode tidak dijumpai.' : 'Barcode not found.');
+
+    // Try OpenFoodFacts v0 API (more reliable than v2)
+    const apis = [
+      'https://world.openfoodfacts.org/api/v0/product/' + barcode + '.json',
+      'https://world.openfoodfacts.org/api/v2/product/' + barcode + '.json?fields=product_name,product_name_en,brands,ingredients_text,ingredients_text_en,categories'
+    ];
+
+    let found = false;
+    for (const apiUrl of apis) {
+      try {
+        const resp = await fetch(apiUrl, {
+          headers: { 'User-Agent': 'JimatPRO - Malaysian Price Compare App' }
+        });
+        if (!resp.ok) continue;
+        const data = await resp.json();
+
+        if (data.status === 1 && data.product) {
+          const prod = data.product;
+          const name = prod.product_name_en || prod.product_name || prod.product_name_ms || '';
+          const ingredients = prod.ingredients_text_en || prod.ingredients_text || prod.ingredients_text_ms || '';
+          const brand = prod.brands || '';
+          const categories = prod.categories || '';
+
+          if (name || ingredients) {
+            found = true;
+            if (status) status.textContent = '✅ ' + (name || barcode) + (brand ? ' — ' + brand : '');
+
+            const inp = document.getElementById('ingredient-input');
+
+            if (ingredients.trim()) {
+              // Has ingredients — run halal check
+              if (inp) inp.value = ingredients.substring(0, 500);
+              checkIngredients(ingredients);
+
+              // Also show product info card
+              showProductInfo(name, brand, categories, barcode, ingredients);
+            } else {
+              // Has name but no ingredients
+              if (inp) inp.value = name;
+              showProductInfo(name, brand, categories, barcode, '');
+            }
+            break;
+          }
+        }
+      } catch(e) {
+        console.log('API attempt failed:', e.message);
+        continue;
       }
-    } catch(e) {
-      if (status) status.textContent = lang==='my' ? 'Tiada internet.' : 'No internet.';
+    }
+
+    if (!found) {
+      // Not in database — open Google directly
+      if (status) status.textContent = lang==='my'?'Tiada dalam pangkalan data — membuka Google...':'Not in database — opening Google...';
+      const searchQuery = barcode + ' product ingredients';
+      setTimeout(function() {
+        openExternalUrl('https://www.google.com/search?q=' + encodeURIComponent(searchQuery), barcode + ' — product info');
+      }, 800);
     }
   }
+
+  function showProductInfo(name, brand, categories, barcode, ingredients) {
+    const resultEl = document.getElementById('halal-result');
+    if (!resultEl) return;
+
+    // Build product info header above halal result
+    let infoHtml = '';
+    if (name) {
+      infoHtml += '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;">' +
+        '<div style="font-family:Syne,sans-serif;font-size:0.85rem;font-weight:700;color:var(--gold);">' + name + '</div>' +
+        (brand ? '<div style="font-size:0.65rem;color:var(--text2);margin-top:2px;">' + brand + '</div>' : '') +
+        (categories ? '<div style="font-size:0.6rem;color:var(--text3);margin-top:2px;">' + categories.split(',')[0] + '</div>' : '') +
+        '<div style="font-size:0.58rem;color:var(--text3);margin-top:4px;">Barcode: ' + barcode + '</div>' +
+        '</div>';
+    }
+
+    if (!ingredients) {
+      // No ingredients — show Google search option
+      infoHtml += '<div style="font-size:0.68rem;color:var(--text2);margin-bottom:8px;">' +
+        (lang==='my'?'Senarai bahan tidak tersedia. Cari di Google untuk maklumat lanjut.':'Ingredients not available. Search Google for more info.') +
+        '</div>';
+      resultEl.style.display = 'block';
+      resultEl.className = 'halal-result halal-check';
+      resultEl.innerHTML = infoHtml;
+      const gbtn = document.createElement('button');
+      gbtn.style.cssText = 'width:100%;padding:9px;border-radius:8px;background:#4285F4;color:#fff;border:none;font-family:DM Mono,monospace;font-size:0.72rem;font-weight:bold;cursor:pointer;';
+      gbtn.textContent = (lang==='my'?'🔍 Cari di Google':'🔍 Search on Google');
+      gbtn.onclick = function() { openExternalUrl('https://www.google.com/search?q=' + encodeURIComponent((name||barcode) + ' ingredients halal'), name||barcode); };
+      resultEl.appendChild(gbtn);
+    }
+    // If has ingredients, halal result will be shown by checkIngredients()
+    // Just prepend product info to whatever result appears
+    else {
+      setTimeout(function() {
+        const r = document.getElementById('halal-result');
+        if (r && r.innerHTML) r.innerHTML = infoHtml + r.innerHTML;
+      }, 100);
+    }
+  }
+
 
   function showBarcodeNotFound(query, message) {
     const r = document.getElementById('halal-result'); if (!r) return;
