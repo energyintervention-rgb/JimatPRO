@@ -624,7 +624,19 @@
 
   addItem();addItem();buildEcodePills();loadHalalDB();setLang('my');switchTab('compare');
 
-  window.addEventListener('load',function(){setTimeout(function(){const splash=document.getElementById('splash');if(splash){splash.style.opacity='0';setTimeout(function(){splash.style.display='none';},500);}},1800);});
+  // Dismiss splash — multiple fallbacks so it never hangs
+  function dismissSplash() {
+    const splash = document.getElementById('splash');
+    if (!splash || splash.style.display === 'none') return;
+    splash.style.opacity = '0';
+    setTimeout(function() { splash.style.display = 'none'; }, 500);
+  }
+  // Primary: dismiss after 2s no matter what
+  setTimeout(dismissSplash, 2000);
+  // Backup: dismiss on load event
+  window.addEventListener('load', function() { setTimeout(dismissSplash, 500); });
+  // Extra backup: dismiss on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', function() { setTimeout(dismissSplash, 1500); });
 
   // ============================================================
   // SERVICE WORKER
@@ -1160,12 +1172,8 @@
     }
 
     if (!found) {
-      // Not in database — open Google directly
-      if (status) status.textContent = lang==='my'?'Tiada dalam pangkalan data — membuka Google...':'Not in database — opening Google...';
-      const searchQuery = barcode + ' product ingredients';
-      setTimeout(function() {
-        openExternalUrl('https://www.google.com/search?q=' + encodeURIComponent(searchQuery), barcode + ' — product info');
-      }, 800);
+      if (status) status.textContent = lang==='my'?'Tiada dalam pangkalan data.':'Not in database.';
+      showBarcodeOptions(barcode);
     }
   }
 
@@ -1210,31 +1218,68 @@
 
 
   function showBarcodeNotFound(query, message) {
-    const r = document.getElementById('halal-result'); if (!r) return;
-    r.style.display = 'block'; r.className = 'halal-result halal-check';
-    r.innerHTML = '<div class="halal-title">? ' + (lang==='my'?'Tiada rekod':'Not found') + '</div><div style="font-size:0.68rem;color:var(--text2);margin:6px 0;">' + message + '</div>';
-    const btn = document.createElement('button');
-    btn.style.cssText = 'width:100%;padding:9px;border-radius:8px;background:#4285F4;color:#fff;border:none;font-family:DM Mono,monospace;font-size:0.72rem;font-weight:bold;cursor:pointer;';
-    btn.textContent = lang==='my' ? 'Cari di Google' : 'Search on Google';
-    btn.onclick = function() { openExternalUrl('https://www.google.com/search?q=' + encodeURIComponent(query), query); };
-    r.appendChild(btn);
+    showBarcodeOptions(query.split(' ')[0]);
   }
 
-  function readResultAloud(){
-    if(ttsActive){window.speechSynthesis.cancel();ttsActive=false;updateReadBtn(false);return;}
-    const resultEl=document.getElementById('halal-result');if(!resultEl||!resultEl.textContent.trim())return;
-    let text=resultEl.textContent.trim().replace(/\s+/g,' ').substring(0,300);
-    const utter=new SpeechSynthesisUtterance(text);utter.lang=lang==='my'?'ms-MY':'en-US';utter.rate=0.8;utter.pitch=1;utter.volume=1;
-    utter.onstart=function(){ttsActive=true;updateReadBtn(true);};utter.onend=function(){ttsActive=false;updateReadBtn(false);};utter.onerror=function(){ttsActive=false;updateReadBtn(false);};
-    window.speechSynthesis.cancel();window.speechSynthesis.speak(utter);
+  function showBarcodeOptions(barcode) {
+    const resultEl = document.getElementById('halal-result');
+    if (!resultEl) return;
+    resultEl.style.display = 'block';
+    resultEl.className = 'halal-result halal-check';
+
+    const isMY = lang === 'my';
+
+    // Detect Malaysian barcode (starts with 955)
+    const isMalaysian = barcode.startsWith('955');
+
+    resultEl.innerHTML =
+      '<div class="halal-title">?? Barcode: ' + barcode + '</div>' +
+      '<div style="font-size:0.68rem;color:var(--text2);margin:6px 0 10px;">' +
+        (isMY ? 'Produk tidak dijumpai dalam pangkalan data. Cuba cari menggunakan butang di bawah:' :
+                'Product not found in database. Try searching using the buttons below:') +
+      '</div>';
+
+    // Search buttons - different sources
+    const searches = [
+      {
+        label: isMY ? '🔍 Google — Nama Produk' : '🔍 Google — Product Name',
+        color: '#4285F4',
+        url: 'https://www.google.com/search?q=' + encodeURIComponent(barcode + ' product name brand')
+      },
+      {
+        label: isMY ? '🧪 Semak Bahan (INCIDecoder)' : '🧪 Check Ingredients (INCIDecoder)',
+        color: '#8E44AD',
+        url: 'https://incidecoder.com/search?query=' + barcode
+      },
+      {
+        label: isMY ? '🌐 Cari di Barcodelookup' : '🌐 Search Barcodelookup',
+        color: '#16a085',
+        url: 'https://www.barcodelookup.com/' + barcode
+      },
+    ];
+
+    // Add Malaysian-specific search if Malaysian barcode
+    if (isMalaysian) {
+      searches.unshift({
+        label: isMY ? '🇲🇾 Cari Produk Malaysia' : '🇲🇾 Search Malaysian Product',
+        color: '#c0392b',
+        url: 'https://www.google.com/search?q=' + encodeURIComponent(barcode + ' produk malaysia bahan halal')
+      });
+    }
+
+    searches.forEach(function(s) {
+      const btn = document.createElement('button');
+      btn.style.cssText = 'width:100%;padding:9px;border-radius:8px;background:' + s.color + ';color:#fff;border:none;font-family:DM Mono,monospace;font-size:0.7rem;font-weight:bold;cursor:pointer;margin-bottom:6px;text-align:left;';
+      btn.textContent = s.label;
+      btn.onclick = function() { openExternalUrl(s.url, s.label); };
+      resultEl.appendChild(btn);
+    });
+
+    // Manual entry prompt
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:0.6rem;color:var(--text3);margin-top:6px;text-align:center;';
+    hint.textContent = isMY ? 'Atau taip bahan dari label produk di bawah → Semak Halal' : 'Or type ingredients from label below → Check Halal';
+    resultEl.appendChild(hint);
   }
-  function updateReadBtn(speaking){const btn=document.getElementById('read-aloud-btn'),txt=document.getElementById('read-btn-text');if(!btn||!txt)return;if(speaking){btn.style.background='var(--green2)';btn.style.color='#fff';txt.textContent=lang==='my'?'Henti bacaan':'Stop reading';}else{btn.style.background='';btn.style.color='';txt.textContent=lang==='my'?'Baca untuk saya':'Read for me';}}
 
-  function playBeep(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type='sine';osc.frequency.value=1800;gain.gain.setValueAtTime(0.4,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.12);osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.12);}catch(e){}}
-
-  function playHaramBeep(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();[0,0.3,0.6].forEach(function(delay){const osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type='square';osc.frequency.value=880;gain.gain.setValueAtTime(0.3,ctx.currentTime+delay);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay+0.2);osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.2);});}catch(e){}}
-  function playHalalChime(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();[0,0.15,0.3].forEach(function(delay,i){const osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type='sine';osc.frequency.value=[523,659,784][i];gain.gain.setValueAtTime(0.2,ctx.currentTime+delay);gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay+0.4);osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.4);});}catch(e){}}
-
-</script>
-</body>
-</html>
+>
