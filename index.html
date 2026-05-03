@@ -16,9 +16,6 @@
   <meta name="app-version" content="800200">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="manifest" href="manifest.json">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -158,13 +155,18 @@
     .halal-title { font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:700; margin-bottom:6px; }
     .halal-item { padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:0.72rem; }
     .share-btn { width:100%; padding:12px; border-radius:12px; background:#25D366; color:#fff; border:none; font-family:'DM Mono',monospace; font-size:0.8rem; font-weight:bold; cursor:pointer; margin-top:10px; }
-    @keyframes scan { 0%,100%{top:10%;} 50%{top:85%;} }
+    @keyframes splashOut {
+    0%   { opacity:1; pointer-events:all; }
+    100% { opacity:0; pointer-events:none; display:none; visibility:hidden; }
+  }
+  #splash.done { display:none !important; }
+  @keyframes scan { 0%,100%{top:10%;} 50%{top:85%;} }
     @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
   </style>
 </head>
 <body>
 
-<div id="splash" style="position:fixed;inset:0;background:linear-gradient(135deg,#0d1f17,#1a3528);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.4s;">
+<div id="splash" style="position:fixed;inset:0;background:linear-gradient(135deg,#0d1f17,#1a3528);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;animation:splashOut 0.5s ease 1.8s forwards;">
   <div style="font-size:5rem;margin-bottom:16px;">🛒</div>
   <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:#d4a843;letter-spacing:-0.02em;">Jimat</div>
   <div id="splash-sub" style="font-size:0.75rem;color:#6a9a7a;margin-top:6px;letter-spacing:0.15em;">BELI BIJAK · JIMAT LEBIH</div>
@@ -385,6 +387,9 @@
   <button class="bnav-btn" id="bnav-info" onclick="switchTab('info')"><span class="bnav-icon">🔍</span><span class="bnav-label">Info</span></button>
 </nav>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js" defer></script>
 <script>
   // DISMISS SPLASH IMMEDIATELY — before any other code runs
   (function() {
@@ -398,7 +403,7 @@
     window.addEventListener('load', dismissSplash);
   })();
 
-  const UNITS=["g","kg","ml","L","oz","lb","count"];
+const UNITS=["g","kg","ml","L","oz","lb","count"];
   const STORES=["Giant","Tesco","Mydin","Aeon","Lotus","Cold Storage","99 Speedmart","Other"];
   let currency='RM',items=[],shoppingList=[],history=[];
   let voiceRecognition=null,voiceActive=false,barcodeActive=false,barcodeStream=null,barcodeReader=null,ttsActive=false;
@@ -1282,4 +1287,8 @@
     resultEl.appendChild(hint);
   }
 
->
+
+
+</script>
+</body>
+</html>
