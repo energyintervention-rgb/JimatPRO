@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barcode Scanner Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: monospace; background: #0d1f17; color: #e8f5ee; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+  h1 { color: #d4a843; margin-bottom: 16px; font-size: 1.4rem; }
+  #scanner-wrap { position: relative; width: 100%; max-width: 400px; border-radius: 12px; overflow: hidden; background: #000; border: 2px solid #d4a843; }
+  #interactive { width: 100%; }
+  #interactive video { width: 100%; display: block; }
+  #interactive canvas { display: none; }
+  /* QuaggaJS draws detection boxes on this canvas */
+  canvas.drawingBuffer { display: block !important; position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
+  .scan-line { position: absolute; left: 10%; right: 10%; height: 2px; background: #d4a843; animation: scan 1.8s ease-in-out infinite; top: 30%; }
+  @keyframes scan { 0%,100%{top:15%} 50%{top:80%} }
+  #result-box { width: 100%; max-width: 400px; margin-top: 16px; background: #132a1e; border: 1.5px solid #2d5a3f; border-radius: 10px; padding: 14px; min-height: 60px; }
+  .result-label { font-size: 0.6rem; color: #6a9a7a; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .result-val { font-size: 1rem; color: #d4a843; font-weight: bold; word-break: break-all; }
+  .result-type { font-size: 0.65rem; color: #a8c8b4; margin-top: 4px; }
+  #status { margin-top: 10px; font-size: 0.7rem; color: #6a9a7a; text-align: center; min-height: 20px; }
+  .btn { margin-top: 12px; width: 100%; max-width: 400px; padding: 12px; border-radius: 10px; background: #27ae60; color: #fff; border: none; font-family: monospace; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+  .btn.stop { background: #e74c3c; }
+</style>
+</head>
+<body>
+
+<h1>📷 Barcode Scanner</h1>
+
+<div id="scanner-wrap">
+  <div id="interactive">
+    <!-- QuaggaJS injects video + canvas here -->
+  </div>
+  <div class="scan-line"></div>
+</div>
+
+<div id="result-box">
+  <div class="result-label">SCANNED RESULT</div>
+  <div class="result-val" id="result-val">—</div>
+  <div class="result-type" id="result-type"></div>
+</div>
+
+<div id="status">Loading scanner...</div>
+
+<button class="btn" id="toggle-btn" onclick="toggleScanner()">▶ Start Scanner</button>
+
+<!-- Quagga2 — more actively maintained than QuaggaJS, better mobile support -->
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+
+<script>
+let scanning = false;
+let lastCode = '';
+let confirmCount = 0;
+const CONFIRM_NEEDED = 3; // require 3 consistent reads before accepting
+
+function toggleScanner() {
+  if (scanning) stopScanner();
+  else startScanner();
+}
+
+function startScanner() {
+  document.getElementById('status').textContent = 'Starting camera...';
+  document.getElementById('toggle-btn').textContent = '⏹ Stop Scanner';
+  document.getElementById('toggle-btn').classList.add('stop');
+  lastCode = '';
+  confirmCount = 0;
+
+  Quagga.init({
+    inputStream: {
+      name: 'Live',
+      type: 'LiveStream',
+      target: document.getElementById('interactive'),
+      constraints: {
+        facingMode: 'environment', // rear camera
+        width: { min: 640, ideal: 1280, max: 1920 },
+        height: { min: 480, ideal: 720, max: 1080 }
+      }
+    },
+    locator: {
+      patchSize: 'medium',   // medium works best for mobile
+      halfSample: true       // faster processing
+    },
+    numOfWorkers: navigator.hardwareConcurrency > 2 ? 2 : 1,
+    frequency: 10,           // decode attempts per second
+    decoder: {
+      // All 1D formats — Quagga2 doesn't support 2D (QR etc)
+      readers: [
+        'ean_reader',        // EAN-13, EAN-8 (most grocery products)
+        'ean_8_reader',
+        'upc_reader',        // UPC-A
+        'upc_e_reader',      // UPC-E
+        'code_128_reader',   // Code 128
+        'code_39_reader',    // Code 39
+        'code_93_reader',    // Code 93
+        'codabar_reader',    // Codabar
+        'i2of5_reader',      // Interleaved 2of5
+      ]
+    },
+    locate: true             // auto-locate barcode in frame
+  }, function(err) {
+    if (err) {
+      document.getElementById('status').textContent = 'Error: ' + err.message;
+      console.error('Quagga init error:', err);
+      stopScanner();
+      return;
+    }
+    Quagga.start();
+    scanning = true;
+    document.getElementById('status').textContent = 'Scanning... point at barcode';
+  });
+
+  // Process each detected frame
+  Quagga.onProcessed(function(result) {
+    const canvas = Quagga.canvas.dom.overlay;
+    const ctx = Quagga.canvas.ctx.overlay;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (result && result.boxes) {
+      // Draw all detected box candidates in dim color
+      result.boxes.filter(function(box) {
+        return box !== result.box;
+      }).forEach(function(box) {
+        Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, ctx, { color: 'rgba(212,168,67,0.3)', lineWidth: 1 });
+      });
+    }
+
+    if (result && result.box) {
+      // Draw the best candidate box in gold
+      Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, ctx, { color: '#d4a843', lineWidth: 2 });
+    }
+
+    if (result && result.codeResult && result.codeResult.code) {
+      // Draw the confirmed barcode line in green
+      Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, ctx, { color: '#27ae60', lineWidth: 3 });
+    }
+  });
+
+  // On successful detection
+  Quagga.onDetected(function(result) {
+    const code = result.codeResult.code;
+    const format = result.codeResult.format;
+    if (!code) return;
+
+    // Confidence filter — reject low-quality reads
+    const errors = (result.codeResult.decodedCodes || [])
+      .filter(function(x) { return x.error !== undefined; })
+      .map(function(x) { return x.error; });
+    const avgError = errors.length
+      ? errors.reduce(function(a, b) { return a + b; }, 0) / errors.length
+      : 1;
+
+    if (avgError > 0.20) return; // skip low confidence
+
+    // Require N consistent reads of same code before accepting
+    if (code === lastCode) {
+      confirmCount++;
+    } else {
+      lastCode = code;
+      confirmCount = 1;
+    }
+
+    // Update status with progress
+    document.getElementById('status').textContent =
+      'Detecting... (' + confirmCount + '/' + CONFIRM_NEEDED + ')';
+
+    if (confirmCount >= CONFIRM_NEEDED) {
+      // Confirmed — accept this barcode
+      playBeep();
+      showResult(code, format);
+      stopScanner();
+    }
+  });
+}
+
+function stopScanner() {
+  try { Quagga.stop(); } catch(e) {}
+  scanning = false;
+  lastCode = '';
+  confirmCount = 0;
+  document.getElementById('toggle-btn').textContent = '▶ Start Scanner';
+  document.getElementById('toggle-btn').classList.remove('stop');
+  document.getElementById('status').textContent = 'Scanner stopped. Tap to restart.';
+  // Clear canvas
+  try {
+    const ctx = Quagga.canvas.ctx.overlay;
+    const canvas = Quagga.canvas.dom.overlay;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  } catch(e) {}
+}
+
+function showResult(code, format) {
+  document.getElementById('result-val').textContent = code;
+  document.getElementById('result-type').textContent = 'Format: ' + (format || 'unknown').toUpperCase();
+  document.getElementById('status').textContent = '✅ Barcode detected!';
+}
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = 1800;
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.15);
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
