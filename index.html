@@ -164,7 +164,7 @@
 </head>
 <body>
 
-<div id="splash" style="position:fixed;inset:0;background:linear-gradient(135deg,#0d1f17,#1a3528);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.5s;">
+<div id="splash" style="position:fixed;inset:0;background:linear-gradient(135deg,#0d1f17,#1a3528);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.4s;">
   <div style="font-size:5rem;margin-bottom:16px;">🛒</div>
   <div style="font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:#d4a843;letter-spacing:-0.02em;">Jimat</div>
   <div id="splash-sub" style="font-size:0.75rem;color:#6a9a7a;margin-top:6px;letter-spacing:0.15em;">BELI BIJAK · JIMAT LEBIH</div>
@@ -386,6 +386,18 @@
 </nav>
 
 <script>
+  // DISMISS SPLASH IMMEDIATELY — before any other code runs
+  (function() {
+    function dismissSplash() {
+      var s = document.getElementById('splash');
+      if (s) { s.style.opacity='0'; s.style.transition='opacity 0.4s'; setTimeout(function(){ s.style.display='none'; }, 400); }
+    }
+    // Fire after 1.5s no matter what — covers slow network
+    setTimeout(dismissSplash, 1500);
+    // Also fire on load
+    window.addEventListener('load', dismissSplash);
+  })();
+
   const UNITS=["g","kg","ml","L","oz","lb","count"];
   const STORES=["Giant","Tesco","Mydin","Aeon","Lotus","Cold Storage","99 Speedmart","Other"];
   let currency='RM',items=[],shoppingList=[],history=[];
@@ -624,19 +636,7 @@
 
   addItem();addItem();buildEcodePills();loadHalalDB();setLang('my');switchTab('compare');
 
-  // Dismiss splash — multiple fallbacks so it never hangs
-  function dismissSplash() {
-    const splash = document.getElementById('splash');
-    if (!splash || splash.style.display === 'none') return;
-    splash.style.opacity = '0';
-    setTimeout(function() { splash.style.display = 'none'; }, 500);
-  }
-  // Primary: dismiss after 2s no matter what
-  setTimeout(dismissSplash, 2000);
-  // Backup: dismiss on load event
-  window.addEventListener('load', function() { setTimeout(dismissSplash, 500); });
-  // Extra backup: dismiss on DOMContentLoaded
-  document.addEventListener('DOMContentLoaded', function() { setTimeout(dismissSplash, 1500); });
+  // splash handled above
 
   // ============================================================
   // SERVICE WORKER
