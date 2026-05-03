@@ -1287,7 +1287,79 @@ const UNITS=["g","kg","ml","L","oz","lb","count"];
     resultEl.appendChild(hint);
   }
 
+  // ============================================================
+  // BACA UNTUK SAYA (Text-to-Speech)
+  // ============================================================
+  function readResultAloud() {
+    if (ttsActive) { window.speechSynthesis.cancel(); ttsActive = false; updateReadBtn(false); return; }
+    const resultEl = document.getElementById('halal-result');
+    if (!resultEl || !resultEl.textContent.trim()) return;
+    let text = resultEl.textContent.trim().replace(/\s+/g, ' ').substring(0, 300);
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang === 'my' ? 'ms-MY' : 'en-US';
+    utter.rate = 0.8; utter.pitch = 1; utter.volume = 1;
+    utter.onstart = function() { ttsActive = true; updateReadBtn(true); };
+    utter.onend = function() { ttsActive = false; updateReadBtn(false); };
+    utter.onerror = function() { ttsActive = false; updateReadBtn(false); };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  }
 
+  function updateReadBtn(speaking) {
+    const btn = document.getElementById('read-aloud-btn');
+    const txt = document.getElementById('read-btn-text');
+    if (!btn || !txt) return;
+    if (speaking) {
+      btn.style.background = 'var(--green2)'; btn.style.color = '#fff';
+      txt.textContent = lang === 'my' ? 'Henti bacaan' : 'Stop reading';
+    } else {
+      btn.style.background = ''; btn.style.color = '';
+      txt.textContent = lang === 'my' ? 'Baca untuk saya' : 'Read for me';
+    }
+  }
+
+  // ============================================================
+  // BEEP / CHIME
+  // ============================================================
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = 1800;
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.12);
+    } catch(e) {}
+  }
+
+  function playHaramBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.3, 0.6].forEach(function(delay) {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'square'; osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.2);
+        osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.2);
+      });
+    } catch(e) {}
+  }
+
+  function playHalalChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.15, 0.3].forEach(function(delay, i) {
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.value = [523, 659, 784][i];
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.4);
+        osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.4);
+      });
+    } catch(e) {}
+  }
 
 </script>
 </body>
