@@ -1317,11 +1317,19 @@
     // Build product info header above halal result
     let infoHtml = '';
     if (name) {
+      const shopeeUrl = 'https://shopee.com.my/search?keyword=' + encodeURIComponent(name);
+      const lazadaUrl = 'https://www.lazada.com.my/catalog/?q=' + encodeURIComponent(name);
+      const googleUrl = 'https://www.google.com/search?q=' + encodeURIComponent(name + ' malaysia price');
       infoHtml += '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;">' +
         '<div style="font-family:Syne,sans-serif;font-size:0.85rem;font-weight:700;color:var(--gold);">' + name + '</div>' +
         (brand ? '<div style="font-size:0.65rem;color:var(--text2);margin-top:2px;">' + brand + '</div>' : '') +
         (categories ? '<div style="font-size:0.6rem;color:var(--text3);margin-top:2px;">' + categories.split(',')[0] + '</div>' : '') +
-        '<div style="font-size:0.58rem;color:var(--text3);margin-top:4px;">Barcode: ' + barcode + '</div>' +
+        '<div style="font-size:0.58rem;color:var(--text3);margin-top:4px;margin-bottom:8px;">Barcode: ' + barcode + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<a href="' + shopeeUrl + '" target="_blank" style="flex:1;min-width:80px;padding:7px 8px;background:#EE4D2D;color:#fff;border-radius:8px;text-align:center;font-size:0.65rem;font-weight:bold;text-decoration:none;">🛍️ Shopee</a>' +
+          '<a href="' + lazadaUrl + '" target="_blank" style="flex:1;min-width:80px;padding:7px 8px;background:#0F146D;color:#fff;border-radius:8px;text-align:center;font-size:0.65rem;font-weight:bold;text-decoration:none;">📦 Lazada</a>' +
+          '<a href="' + googleUrl + '" target="_blank" style="flex:1;min-width:80px;padding:7px 8px;background:#4285F4;color:#fff;border-radius:8px;text-align:center;font-size:0.65rem;font-weight:bold;text-decoration:none;">🔍 Google</a>' +
+        '</div>' +
         '</div>';
     }
 
@@ -1375,6 +1383,16 @@
     // Search buttons - different sources
     const searches = [
       {
+        label: isMY ? '🛍️ Cari di Shopee' : '🛍️ Search on Shopee',
+        color: '#EE4D2D',
+        url: 'https://shopee.com.my/search?keyword=' + encodeURIComponent(barcode)
+      },
+      {
+        label: isMY ? '📦 Cari di Lazada' : '📦 Search on Lazada',
+        color: '#0F146D',
+        url: 'https://www.lazada.com.my/catalog/?q=' + encodeURIComponent(barcode)
+      },
+      {
         label: isMY ? '🔍 Google — Nama Produk' : '🔍 Google — Product Name',
         color: '#4285F4',
         url: 'https://www.google.com/search?q=' + encodeURIComponent(barcode + ' product name brand')
@@ -1394,9 +1412,9 @@
     // Add Malaysian-specific search if Malaysian barcode
     if (isMalaysian) {
       searches.unshift({
-        label: isMY ? '🇲🇾 Cari Produk Malaysia' : '🇲🇾 Search Malaysian Product',
+        label: isMY ? '🇲🇾 Google — Produk Malaysia' : '🇲🇾 Google — Malaysian Product',
         color: '#c0392b',
-        url: 'https://www.google.com/search?q=' + encodeURIComponent(barcode + ' produk malaysia bahan halal')
+        url: 'https://www.google.com/search?q=' + encodeURIComponent(barcode + ' produk malaysia')
       });
     }
 
