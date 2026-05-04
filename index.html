@@ -1359,7 +1359,8 @@
 
 
   function showBarcodeNotFound(query, message) {
-    showBarcodeOptions(query.split(' ')[0]);
+    const barcode = query.split(' ')[0];
+    showBarcodeOptions(barcode);
   }
 
   function showBarcodeOptions(barcode) {
@@ -1367,94 +1368,58 @@
     if (!resultEl) return;
     resultEl.style.display = 'block';
     resultEl.className = 'halal-result halal-check';
-
     const isMY = lang === 'my';
-
-    // Detect Malaysian barcode (starts with 955)
     const isMalaysian = barcode.startsWith('955');
 
     resultEl.innerHTML =
-      '<div class="halal-title">?? Barcode: ' + barcode + '</div>' +
+      '<div class="halal-title">\u2753 Barcode: ' + barcode + '</div>' +
       '<div style="font-size:0.68rem;color:var(--text2);margin:6px 0 10px;">' +
-        (isMY ? 'Produk tidak dijumpai dalam pangkalan data. Cuba cari menggunakan butang di bawah:' :
-                'Product not found in database. Try searching using the buttons below:') +
+        (isMY ? 'Produk tidak dijumpai dalam pangkalan data. Cuba cari menggunakan Google:' :
+                'Product not found in database. Try searching on Google:') +
       '</div>';
 
-    // Search buttons - different sources
-    const searches = [
+    const buttons = [
       {
-        label: isMY ? '🔍 Google — Cari Nama Produk' : '🔍 Google — Find Product Name',
+        label: isMY ? '\uD83D\uDD0D Nama Produk' : '\uD83D\uDD0D Product Name',
         color: '#4285F4',
-        url: 'https://www.google.com/search?q=' + encodeURIComponent(barcode + ' product')
+        query: barcode + ' product'
       },
       {
-        label: isMY ? '🌐 Barcodelookup.com' : '🌐 Barcodelookup.com',
-        color: '#16a085',
-        url: 'https://www.barcodelookup.com/' + barcode
+        label: isMY ? '\uD83D\uDCB0 Harga / Price' : '\uD83D\uDCB0 Price',
+        color: '#27ae60',
+        query: barcode + ' product price'
       },
       {
-        label: isMY ? '🧪 Semak Bahan (INCIDecoder)' : '🧪 Check Ingredients (INCIDecoder)',
-        color: '#8E44AD',
-        url: 'https://incidecoder.com/search?query=' + barcode
-      },
-    ];
-    // Note: Shopee/Lazada needs product NAME not barcode - shown below
-    const shopeeHint = document.createElement('div');
-    shopeeHint.style.cssText = 'font-size:0.62rem;color:var(--gold);margin:8px 0 4px;';
-    shopeeHint.textContent = isMY ? '💡 Selepas tahu nama produk, cari harga di:' : '💡 Once you know the product name, check price at:';
-    const priceSearches = [
-      {
-        label: '🛍️ Shopee Malaysia',
-        color: '#EE4D2D',
-        url: 'https://shopee.com.my/search?keyword=' + encodeURIComponent(barcode)
-      },
-      {
-        label: '📦 Lazada Malaysia',
-        color: '#0F146D',
-        url: 'https://www.lazada.com.my/catalog/?q=' + encodeURIComponent(barcode)
+        label: isMY ? '\uD83C\uDF0E Beli Online' : '\uD83C\uDF0E Buy Online',
+        color: '#e67e22',
+        query: barcode + ' product buy online malaysia'
       },
     ];
 
-    // Add Malaysian-specific search if Malaysian barcode
     if (isMalaysian) {
-      searches.unshift({
-        label: isMY ? '🇲🇾 Google — Produk Malaysia' : '🇲🇾 Google — Malaysian Product',
+      buttons.push({
+        label: '\uD83C\uDDF2\uD83C\uDDFE Produk Malaysia',
         color: '#c0392b',
-        url: 'https://www.google.com/search?q=' + encodeURIComponent(barcode + ' produk malaysia')
+        query: barcode + ' produk malaysia harga'
       });
     }
 
-    searches.forEach(function(s) {
+    buttons.forEach(function(b) {
       const btn = document.createElement('button');
-      btn.style.cssText = 'width:100%;padding:9px;border-radius:8px;background:' + s.color + ';color:#fff;border:none;font-family:DM Mono,monospace;font-size:0.7rem;font-weight:bold;cursor:pointer;margin-bottom:6px;text-align:left;';
-      btn.textContent = s.label;
-      btn.onclick = function() { openExternalUrl(s.url, s.label); };
+      btn.style.cssText = 'width:100%;padding:9px;border-radius:8px;background:' + b.color + ';color:#fff;border:none;font-family:DM Mono,monospace;font-size:0.72rem;font-weight:bold;cursor:pointer;margin-bottom:6px;text-align:left;';
+      btn.textContent = b.label;
+      btn.onclick = function() {
+        openExternalUrl('https://www.google.com/search?q=' + encodeURIComponent(b.query), b.label);
+      };
       resultEl.appendChild(btn);
     });
 
-    // Price search section
-    resultEl.appendChild(shopeeHint);
-    const priceRow = document.createElement('div');
-    priceRow.style.cssText = 'display:flex;gap:6px;';
-    priceSearches.forEach(function(s) {
-      const btn = document.createElement('button');
-      btn.style.cssText = 'flex:1;padding:9px 6px;border-radius:8px;background:' + s.color + ';color:#fff;border:none;font-family:DM Mono,monospace;font-size:0.68rem;font-weight:bold;cursor:pointer;text-align:center;';
-      btn.textContent = s.label;
-      btn.onclick = function() { openExternalUrl(s.url, s.label); };
-      priceRow.appendChild(btn);
-    });
-    resultEl.appendChild(priceRow);
-
-    // Manual entry prompt
     const hint = document.createElement('div');
     hint.style.cssText = 'font-size:0.6rem;color:var(--text3);margin-top:6px;text-align:center;';
-    hint.textContent = isMY ? 'Atau taip bahan dari label produk di bawah → Semak Halal' : 'Or type ingredients from label below → Check Halal';
+    hint.textContent = isMY ? 'Atau taip bahan dari label produk di bawah \u2192 Semak Halal' : 'Or type ingredients from label below \u2192 Check Halal';
     resultEl.appendChild(hint);
   }
 
-  // ============================================================
-  // BACA UNTUK SAYA (Text-to-Speech)
-  // ============================================================
   function readResultAloud() {
     if (ttsActive) { window.speechSynthesis.cancel(); ttsActive = false; updateReadBtn(false); return; }
     const resultEl = document.getElementById('halal-result');
