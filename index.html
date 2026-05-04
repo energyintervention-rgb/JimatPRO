@@ -1210,9 +1210,14 @@
     });
 
     Quagga.onDetected(function(result) {
-      const code = result.codeResult.code;
+      let code = result.codeResult.code;
       const format = result.codeResult.format;
       if (!code || !barcodeActive) return;
+      // Strip leading zero from 13-digit EAN if it starts with 0
+      // Some scanners pad UPC-A (12 digit) to EAN-13 (13 digit) with a leading 0
+      if (code.length === 13 && code.charAt(0) === '0') {
+        code = code.substring(1); // try 12-digit UPC-A version
+      }
 
       // Confidence filter
       const errors = (result.codeResult.decodedCodes || [])
